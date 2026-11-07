@@ -44,10 +44,10 @@ const bodies=[];
 const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0,angle:0});
 function setup(){
  bodies.length=0;
- bodies.push(make(W/2,H*.76,27,2.5,'#53f5e8','strikerA'));
- bodies.push(make(W/2,H*.24,27,2.5,'#ff4f9a','strikerB'));
+ bodies.push(make(W/2,H*.76,27,5,'#53f5e8','strikerA'));
+ bodies.push(make(W/2,H*.24,27,5,'#ff4f9a','strikerB'));
  bodies.push(make(W/2,H/2,10,.82,'#f5fbff','ball'));
- for(let i=0;i<3;i++){bodies.push(make(W/2+(i-1)*47,H*.61,22,2.5,'#1fb9c9','discA'));bodies.push(make(W/2+(i-1)*47,H*.39,22,2.5,'#c73578','discB'));}
+ for(let i=0;i<3;i++){bodies.push(make(W/2+(i-1)*47,H*.61,22,5,'#1fb9c9','discA'));bodies.push(make(W/2+(i-1)*47,H*.39,22,5,'#c73578','discB'));}
  particles=[];trails=[];aim=null;selected=null;turn='A';settleTimer=0;updateTurn();
 }
 function resize(){
