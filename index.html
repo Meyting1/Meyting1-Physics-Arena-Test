@@ -28,7 +28,7 @@ button:active{transform:scale(.97)}.hint{line-height:1.45;max-width:65%}
 </head>
 <body>
 <div id="app">
-<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · FAST MOMENTUM & SOFT STOP 0.8</div></header>
+<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS ENGINE · FIXED STEP & RIGID-BODY CONTACT 1.0</div></header>
 <div class="hud"><div class="score"><div><div class="team">CYAN</div><strong id="scoreA">0</strong></div><span style="color:#49677b">:</span><div><div class="team">MAGENTA</div><strong id="scoreB">0</strong></div></div><div id="turn">YOUR TURN</div><button id="reset">RESTART</button></div>
 <div class="arena-wrap"><canvas id="game"></canvas><div class="overlay"><div class="toast" id="toast"><b id="toastTitle">GOAL!</b><span id="toastSub">Nice shot</span></div></div></div>
 <div class="controls"><div class="hint">Drag back from the glowing striker to aim, then release. Collisions, wall rebounds and rolling friction are simulated in real time.</div><button id="sound">SOUND: ON</button></div>
@@ -46,7 +46,7 @@ function setup(){
  bodies.length=0;
  bodies.push(make(W/2,H*.76,27,1.25,'#53f5e8','strikerA'));
  bodies.push(make(W/2,H*.24,27,1.25,'#ff4f9a','strikerB'));
- bodies.push(make(W/2,H/2,17,.18,'#f5fbff','ball'));
+ bodies.push(make(W/2,H/2,17,.55,'#f5fbff','ball'));
  for(let i=0;i<3;i++){bodies.push(make(W/2+(i-1)*47,H*.61,22,1.25,'#1fb9c9','discA'));bodies.push(make(W/2+(i-1)*47,H*.39,22,1.25,'#c73578','discB'));}
  particles=[];trails=[];aim=null;selected=null;turn='A';settleTimer=0;updateTurn();
 }
@@ -58,11 +58,11 @@ function resize(){
 function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*dpr/scale-ox/scale,y:(e.clientY-r.top)*dpr/scale-oy/scale}}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function updateTurn(){$('turn').textContent=turn==='A'?'YOUR TURN':'OPPONENT TURN';}
-function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.012)}
+function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.8)}
 function playTone(freq=260,dur=.06,type='sine',vol=.035){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.stop(audio.currentTime+dur)}catch{}}
 function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:35+Math.random()*20,color,r:1+Math.random()*3})}}
 function showToast(title,sub){$('toastTitle').textContent=title;$('toastSub').textContent=sub;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1500)}
-function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<8)return;const power=Math.min(len,150)*.48;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=(dx*b.vy-dy*b.vx)*.002;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
+function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<8)return;const power=Math.min(len,150)*8.5;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7],teamB=[1,4,6,8];
 canvas.addEventListener('pointerdown',e=>{
  if(moving()||turn!=='A')return;
@@ -78,58 +78,64 @@ canvas.addEventListener('pointerup',e=>{
  strike(b,dx,dy);aim=null;selected=null;
 });
 canvas.addEventListener('pointercancel',()=>{aim=null;selected=null});
-function physics(dt){
- // Fixed-size substeps keep fast impacts stable and motion smooth across phone refresh rates.
- const steps=8,h=dt/steps;
- for(let s=0;s<steps;s++){
-  for(const b of bodies){
-   b.x+=b.vx*h;b.y+=b.vy*h;
-   // The ball has its own rolling model: it keeps momentum, rotates as it travels,
-   // and its sidespin adds a subtle curved flight across the pitch.
-   const isBall=b.kind==='ball';
-   const speedBefore=Math.hypot(b.vx,b.vy);
-   // Preserve momentum while the disc is moving quickly; increase rolling resistance
-   // smoothly only as it approaches rest, so the final stop is gentle.
-   const glide=clamp(speedBefore/16,0,1);
-   const drag=Math.pow(.985+.013*glide,h*60);b.vx*=drag;b.vy*=drag;
-   if(isBall){
-    const speedNow=Math.hypot(b.vx,b.vy);
-    b.angle+=(speedNow/b.r+b.spin)*h;
-    const curve=clamp(b.spin*speedNow*.055,-.11,.11);
-    const vx=b.vx,vy=b.vy;b.vx+=-vy*curve*h;b.vy+=vx*curve*h;
-    b.spin*=Math.pow(.9985,h*60);
-   }else{b.spin*=Math.pow(.994,h*60);}
-   const speed=Math.hypot(b.vx,b.vy);
-   if(speed<.018){b.vx=0;b.vy=0}
-   const maxSpeed=b.kind==='ball'?90:78;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
-   const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
-   if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
-   if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
-   if(b.y-b.r<wall && !inGoal){b.y=wall+b.r;b.vy=Math.abs(b.vy)*.94;wallFX(b.x,b.y)}
-   if(b.y+b.r>H-wall && !inGoal){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*.94;wallFX(b.x,b.y)}
+function physics(h){
+ // h is a fixed 1/120-second step. Velocities are pixels per second.
+ for(const b of bodies){
+  const speed=Math.hypot(b.vx,b.vy);
+  if(speed>0){
+   const rolling=b.kind==='ball'?720:900;
+   const next=Math.max(0,speed-rolling*h),factor=next/speed;
+   b.vx*=factor;b.vy*=factor;
   }
-  for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)collide(bodies[i],bodies[j]);
+  // A small Magnus-like curve is driven by spin, not an arbitrary per-frame boost.
+  if(b.kind==='ball'){
+   const curve=clamp(b.spin*.00042,-.16,.16),vx=b.vx,vy=b.vy;
+   b.vx+=-vy*curve*h;b.vy+=vx*curve*h;
+  }
+  b.x+=b.vx*h;b.y+=b.vy*h;
+  b.angle+=(Math.hypot(b.vx,b.vy)/b.r+b.spin)*h;
+  b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
+  if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
+  const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
+  if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.84;b.vy*=.985;wallFX(b.x,b.y)}
+  if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.84;b.vy*=.985;wallFX(b.x,b.y)}
+  if(b.y-b.r<wall&&!inGoal){b.y=wall+b.r;b.vy=Math.abs(b.vy)*.84;b.vx*=.985;wallFX(b.x,b.y)}
+  if(b.y+b.r>H-wall&&!inGoal){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*.84;b.vx*=.985;wallFX(b.x,b.y)}
  }
+ // Several solver passes resolve contact chains and remove residual overlap.
+ for(let pass=0;pass<4;pass++)
+  for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)collide(bodies[i],bodies[j]);
  const ball=bodies[2];
  if(ball.y<-ball.r*.5){scoreA++;goal('A')}
  else if(ball.y>H+ball.r*.5){scoreB++;goal('B')}
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
- let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=a.r+b.r;if(!dist||dist>=min)return;
+ let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=a.r+b.r;
+ if(dist>=min)return;
+ if(dist<1e-8){dx=1;dy=0;dist=1}
  const nx=dx/dist,ny=dy/dist,overlap=min-dist,total=a.inv+b.inv;
- a.x-=nx*overlap*(a.inv/total)*.82;a.y-=ny*overlap*(a.inv/total)*.82;
- b.x+=nx*overlap*(b.inv/total)*.82;b.y+=ny*overlap*(b.inv/total)*.82;
- const rvx=b.vx-a.vx,rvy=b.vy-a.vy,along=rvx*nx+rvy*ny;
- if(along>0)return;
- const restitution=.995,impactBoost=(a.kind==='ball'||b.kind==='ball')?1.28:1.18,imp=-(1+restitution)*along/total*impactBoost;
- a.vx-=imp*a.inv*nx;a.vy-=imp*a.inv*ny;b.vx+=imp*b.inv*nx;b.vy+=imp*b.inv*ny;
- const tx=-ny,ty=nx,tangent=(rvx*tx+rvy*ty),friction=clamp(-tangent*.025,-imp*.12,imp*.12);
- a.vx-=friction*a.inv*tx;a.vy-=friction*a.inv*ty;b.vx+=friction*b.inv*tx;b.vy+=friction*b.inv*ty;
- // Tangential contact friction transfers torque to the ball, not just linear speed.
- if(a.kind==='ball')a.spin+=friction/(.4*a.mass*a.r);
- if(b.kind==='ball')b.spin-=friction/(.4*b.mass*b.r);
- if(imp>1.4){playTone(clamp(100+imp*22,120,520),.035,'sine',.012);if(imp>3)burst((a.x+b.x)/2,(a.y+b.y)/2,'#d8ffff',4)}
+ const correction=Math.max(overlap-.02,0)*.78/total;
+ a.x-=nx*correction*a.inv;a.y-=ny*correction*a.inv;
+ b.x+=nx*correction*b.inv;b.y+=ny*correction*b.inv;
+ const rvx=b.vx-a.vx,rvy=b.vy-a.vy,normalSpeed=rvx*nx+rvy*ny;
+ if(normalSpeed>=0)return;
+ const restitution=(a.kind==='ball'||b.kind==='ball')?.78:.86;
+ const j=-(1+restitution)*normalSpeed/total;
+ a.vx-=j*a.inv*nx;a.vy-=j*a.inv*ny;
+ b.vx+=j*b.inv*nx;b.vy+=j*b.inv*ny;
+ // Coulomb friction uses contact-point velocity, including each body's rotation.
+ const tx=-ny,ty=nx,ra=a.r,rb=b.r;
+ const wa=a.spin||0,wb=b.spin||0;
+ const tangentSpeed=(rvx*tx+rvy*ty)-wa*ra-wb*rb;
+ const ia=2/(a.mass*ra*ra),ib=2/(b.mass*rb*rb);
+ const jt=-tangentSpeed/(total+ra*ra*ia+rb*rb*ib);
+ const mu=(a.kind==='ball'||b.kind==='ball')?.16:.20;
+ const friction=clamp(jt,-mu*j,mu*j);
+ a.vx-=friction*a.inv*tx;a.vy-=friction*a.inv*ty;
+ b.vx+=friction*b.inv*tx;b.vy+=friction*b.inv*ty;
+ a.spin-=friction*ra*ia;b.spin-=friction*rb*ib;
+ if(j>95){playTone(clamp(105+j*.20,120,420),.035,'sine',.01);if(j>230)burst((a.x+b.x)/2,(a.y+b.y)/2,'#d8ffff',4)}
 }
 function goal(who){if(who==='A'){$('scoreA').textContent=scoreA}else{$('scoreB').textContent=scoreB}
  burst(W/2,who==='A'?18:H-18,who==='A'?'#53f5e8':'#ff4f9a',42);playTone(520,.28,'sawtooth',.04);showToast(who==='A'?'GOAL!':'OPPONENT SCORES',who==='A'?'Clean finish':'Keep going');setup();$('scoreA').textContent=scoreA;$('scoreB').textContent=scoreB;}
@@ -167,7 +173,7 @@ function draw(){
    ctx.beginPath();ctx.ellipse(0,0,b.r*.42,b.r*.88,0,0,Math.PI*2);ctx.stroke();
    ctx.beginPath();ctx.ellipse(0,0,b.r*.88,b.r*.34,0,0,Math.PI*2);ctx.stroke();
    ctx.restore();
-  }else{ctx.fillStyle='#ffffff88';ctx.beginPath();ctx.arc(b.x-b.r*.28,b.y-b.r*.3,b.r*.13,0,Math.PI*2);ctx.fill()}
+  }else{ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);ctx.fillStyle='#ffffff88';ctx.beginPath();ctx.arc(-b.r*.28,-b.r*.3,b.r*.13,0,Math.PI*2);ctx.fill();ctx.restore()}
   ctx.restore();
  }
  if(aim&&selected){const b=selected,dx=b.x-aim.x,dy=b.y-aim.y,len=Math.hypot(dx,dy),power=Math.min(len,150);
@@ -180,8 +186,8 @@ function draw(){
  particles=particles.filter(p=>p.life-->0);for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vx*=.96;p.vy*=.96}
  trails=trails.filter(t=>t.life-->0);
 }
-let last=0,aiWait=0;
-function frame(t){let dt=Math.min((t-last)/16.667||1,2);last=t;if(moving())physics(dt);else if(turn==='B'){aiWait+=dt;if(aiWait>30){aiWait=0;ai()}}else aiWait=0;draw();requestAnimationFrame(frame)}
+let last=0,accumulator=0,aiWait=0;const FIXED_STEP=1/120;
+function frame(t){if(!last)last=t;const elapsed=Math.min((t-last)/1000,.05);last=t;accumulator+=elapsed;while(accumulator>=FIXED_STEP){if(moving())physics(FIXED_STEP);accumulator-=FIXED_STEP}if(!moving()&&turn==='B'){aiWait+=elapsed*60;if(aiWait>30){aiWait=0;ai()}}else if(turn!=='B')aiWait=0;draw();requestAnimationFrame(frame)}
 $('reset').addEventListener('click',()=>{scoreA=scoreB=0;$('scoreA').textContent='0';$('scoreB').textContent='0';setup();showToast('MATCH RESET','Ready when you are')});
 $('sound').addEventListener('click',()=>{soundOn=!soundOn;$('sound').textContent='SOUND: '+(soundOn?'ON':'OFF')});
 new ResizeObserver(resize).observe(canvas);resize();setup();requestAnimationFrame(frame);
