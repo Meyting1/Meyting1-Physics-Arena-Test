@@ -86,7 +86,7 @@ function physics(h){
    // Smooth rolling resistance: retain more speed at the start, then
    // let the motion ease naturally into a stop instead of losing a
    // fixed amount of speed every frame.
-   const drag=b.kind==='ball'?1.15:0.42;
+   const drag=b.kind==='ball'?1.15:0.95;
    const factor=Math.exp(-drag*h);
    b.vx*=factor;b.vy*=factor;
   }
