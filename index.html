@@ -28,7 +28,7 @@ button:active{transform:scale(.97)}.hint{line-height:1.45;max-width:65%}
 </head>
 <body>
 <div id="app">
-<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · ARCADE IMPACT PHYSICS 0.4</div></header>
+<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · TRUE BALL ROLL & SPIN 0.5</div></header>
 <div class="hud"><div class="score"><div><div class="team">CYAN</div><strong id="scoreA">0</strong></div><span style="color:#49677b">:</span><div><div class="team">MAGENTA</div><strong id="scoreB">0</strong></div></div><div id="turn">YOUR TURN</div><button id="reset">RESTART</button></div>
 <div class="arena-wrap"><canvas id="game"></canvas><div class="overlay"><div class="toast" id="toast"><b id="toastTitle">GOAL!</b><span id="toastSub">Nice shot</span></div></div></div>
 <div class="controls"><div class="hint">Drag back from the glowing striker to aim, then release. Collisions, wall rebounds and rolling friction are simulated in real time.</div><button id="sound">SOUND: ON</button></div>
@@ -41,7 +41,7 @@ const $=id=>document.getElementById(id);
 const W=520,H=820,wall=24,goalW=170,goalDepth=26;
 let dpr=1,scale=1,ox=0,oy=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
-const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0});
+const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0,angle:0});
 function setup(){
  bodies.length=0;
  bodies.push(make(W/2,H*.76,27,1.25,'#53f5e8','strikerA'));
@@ -84,13 +84,20 @@ function physics(dt){
  for(let s=0;s<steps;s++){
   for(const b of bodies){
    b.x+=b.vx*h;b.y+=b.vy*h;
-   // Rolling resistance: gradual speed loss, with a gentle low-speed settle.
-   const drag=Math.pow(.9965,h*60);b.vx*=drag;b.vy*=drag;
-   b.vx*=Math.pow(.9997,h*60);b.vy*=Math.pow(.9997,h*60);
+   // The ball has its own rolling model: it keeps momentum, rotates as it travels,
+   // and its sidespin adds a subtle curved flight across the pitch.
+   const isBall=b.kind==='ball';
+   const drag=Math.pow(isBall?.99935:.9965,h*60);b.vx*=drag;b.vy*=drag;
+   if(isBall){
+    const speedNow=Math.hypot(b.vx,b.vy);
+    b.angle+=(speedNow/b.r+b.spin)*h;
+    const curve=clamp(b.spin*speedNow*.055,-.11,.11);
+    const vx=b.vx,vy=b.vy;b.vx+=-vy*curve*h;b.vy+=vx*curve*h;
+    b.spin*=Math.pow(.9985,h*60);
+   }else{b.vx*=Math.pow(.9997,h*60);b.vy*=Math.pow(.9997,h*60);b.spin*=Math.pow(.994,h*60);}
    const speed=Math.hypot(b.vx,b.vy);
    if(speed<.035){b.vx=0;b.vy=0}
    const maxSpeed=b.kind==='ball'?78:62;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
-   b.spin*=Math.pow(.994,h*60);
    const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
    if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
    if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
@@ -113,8 +120,11 @@ function collide(a,b){
  if(along>0)return;
  const restitution=.995,impactBoost=(a.kind==='ball'||b.kind==='ball')?1.28:1.18,imp=-(1+restitution)*along/total*impactBoost;
  a.vx-=imp*a.inv*nx;a.vy-=imp*a.inv*ny;b.vx+=imp*b.inv*nx;b.vy+=imp*b.inv*ny;
- const tx=-ny,ty=nx,tangent=(rvx*tx+rvy*ty),friction=clamp(-tangent*.008,-imp*.035,imp*.035);
+ const tx=-ny,ty=nx,tangent=(rvx*tx+rvy*ty),friction=clamp(-tangent*.025,-imp*.12,imp*.12);
  a.vx-=friction*a.inv*tx;a.vy-=friction*a.inv*ty;b.vx+=friction*b.inv*tx;b.vy+=friction*b.inv*ty;
+ // Tangential contact friction transfers torque to the ball, not just linear speed.
+ if(a.kind==='ball')a.spin+=friction/(.4*a.mass*a.r);
+ if(b.kind==='ball')b.spin-=friction/(.4*b.mass*b.r);
  if(imp>1.4){playTone(clamp(100+imp*22,120,520),.035,'sine',.012);if(imp>3)burst((a.x+b.x)/2,(a.y+b.y)/2,'#d8ffff',4)}
 }
 function goal(who){if(who==='A'){$('scoreA').textContent=scoreA}else{$('scoreB').textContent=scoreB}
@@ -146,7 +156,15 @@ function draw(){
   let g=ctx.createRadialGradient(b.x-b.r*.35,b.y-b.r*.4,2,b.x,b.y,b.r);g.addColorStop(0,'#ffffff');g.addColorStop(.22,b.color);g.addColorStop(1,'#071421');
   ctx.fillStyle=g;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
   ctx.strokeStyle=b.kind==='ball'?'#ffffff':'#c7ffff88';ctx.lineWidth=2;ctx.stroke();
-  ctx.fillStyle='#ffffff88';ctx.beginPath();ctx.arc(b.x-b.r*.28,b.y-b.r*.3,b.r*.13,0,Math.PI*2);ctx.fill();ctx.restore();
+  if(b.kind==='ball'){
+   // Rotating curved seams make rolling and sidespin visible at a glance.
+   ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
+   ctx.strokeStyle='#7d9eaf';ctx.lineWidth=2.2;ctx.globalAlpha=.9;
+   ctx.beginPath();ctx.ellipse(0,0,b.r*.42,b.r*.88,0,0,Math.PI*2);ctx.stroke();
+   ctx.beginPath();ctx.ellipse(0,0,b.r*.88,b.r*.34,0,0,Math.PI*2);ctx.stroke();
+   ctx.restore();
+  }else{ctx.fillStyle='#ffffff88';ctx.beginPath();ctx.arc(b.x-b.r*.28,b.y-b.r*.3,b.r*.13,0,Math.PI*2);ctx.fill()}
+  ctx.restore();
  }
  if(aim&&selected){const b=selected,dx=b.x-aim.x,dy=b.y-aim.y,len=Math.hypot(dx,dy),power=Math.min(len,150);
  ctx.strokeStyle='#53f5e8';ctx.lineWidth=4;ctx.setLineDash([9,8]);ctx.globalAlpha=.8;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+dx*.85,b.y+dy*.85);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
