@@ -79,7 +79,7 @@ function physics(dt){
    b.vx*=Math.pow(.999,h*60);b.vy*=Math.pow(.999,h*60);
    if(Math.hypot(b.vx,b.vy)<.018){b.vx=0;b.vy=0}
    b.spin*=.992;
-   const inGoal=b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
+   const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
    if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.88;wallFX(b.x,b.y)}
    if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.88;wallFX(b.x,b.y)}
    if(b.y-b.r<wall && !inGoal){b.y=wall+b.r;b.vy=Math.abs(b.vy)*.88;wallFX(b.x,b.y)}
