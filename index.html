@@ -28,7 +28,7 @@ button:active{transform:scale(.97)}.hint{line-height:1.45;max-width:65%}
 </head>
 <body>
 <div id="app">
-<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS ENGINE · FIXED STEP & RIGID-BODY CONTACT 1.0</div></header>
+<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS ENGINE · BALL REBOUND & MOMENTUM 1.1</div></header>
 <div class="hud"><div class="score"><div><div class="team">CYAN</div><strong id="scoreA">0</strong></div><span style="color:#49677b">:</span><div><div class="team">MAGENTA</div><strong id="scoreB">0</strong></div></div><div id="turn">YOUR TURN</div><button id="reset">RESTART</button></div>
 <div class="arena-wrap"><canvas id="game"></canvas><div class="overlay"><div class="toast" id="toast"><b id="toastTitle">GOAL!</b><span id="toastSub">Nice shot</span></div></div></div>
 <div class="controls"><div class="hint">Drag back from the glowing striker to aim, then release. Collisions, wall rebounds and rolling friction are simulated in real time.</div><button id="sound">SOUND: ON</button></div>
@@ -83,13 +83,13 @@ function physics(h){
  for(const b of bodies){
   const speed=Math.hypot(b.vx,b.vy);
   if(speed>0){
-   const rolling=b.kind==='ball'?720:900;
+   const rolling=b.kind==='ball'?420:900;
    const next=Math.max(0,speed-rolling*h),factor=next/speed;
    b.vx*=factor;b.vy*=factor;
   }
   // A small Magnus-like curve is driven by spin, not an arbitrary per-frame boost.
   if(b.kind==='ball'){
-   const curve=clamp(b.spin*.00042,-.16,.16),vx=b.vx,vy=b.vy;
+   const curve=clamp(b.spin*.00075,-.22,.22),vx=b.vx,vy=b.vy;
    b.vx+=-vy*curve*h;b.vy+=vx*curve*h;
   }
   b.x+=b.vx*h;b.y+=b.vy*h;
@@ -97,14 +97,16 @@ function physics(h){
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
-  if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.84;b.vy*=.985;wallFX(b.x,b.y)}
-  if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.84;b.vy*=.985;wallFX(b.x,b.y)}
-  if(b.y-b.r<wall&&!inGoal){b.y=wall+b.r;b.vy=Math.abs(b.vy)*.84;b.vx*=.985;wallFX(b.x,b.y)}
-  if(b.y+b.r>H-wall&&!inGoal){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*.84;b.vx*=.985;wallFX(b.x,b.y)}
+  if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.y-b.r<wall&&!inGoal){b.y=wall+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.y+b.r>H-wall&&!inGoal){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
   for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)collide(bodies[i],bodies[j]);
+ const ballSpeed=Math.hypot(bodies[2].vx,bodies[2].vy);
+ if(ballSpeed>1120){bodies[2].vx*=1120/ballSpeed;bodies[2].vy*=1120/ballSpeed}
  const ball=bodies[2];
  if(ball.y<-ball.r*.5){scoreA++;goal('A')}
  else if(ball.y>H+ball.r*.5){scoreB++;goal('B')}
@@ -120,7 +122,8 @@ function collide(a,b){
  b.x+=nx*correction*b.inv;b.y+=ny*correction*b.inv;
  const rvx=b.vx-a.vx,rvy=b.vy-a.vy,normalSpeed=rvx*nx+rvy*ny;
  if(normalSpeed>=0)return;
- const restitution=(a.kind==='ball'||b.kind==='ball')?.78:.86;
+ const ballContact=a.kind==='ball'||b.kind==='ball';
+ const restitution=ballContact?.92:.86;
  const j=-(1+restitution)*normalSpeed/total;
  a.vx-=j*a.inv*nx;a.vy-=j*a.inv*ny;
  b.vx+=j*b.inv*nx;b.vy+=j*b.inv*ny;
@@ -130,7 +133,7 @@ function collide(a,b){
  const tangentSpeed=(rvx*tx+rvy*ty)-wa*ra-wb*rb;
  const ia=2/(a.mass*ra*ra),ib=2/(b.mass*rb*rb);
  const jt=-tangentSpeed/(total+ra*ra*ia+rb*rb*ib);
- const mu=(a.kind==='ball'||b.kind==='ball')?.16:.20;
+ const mu=ballContact?.12:.20;
  const friction=clamp(jt,-mu*j,mu*j);
  a.vx-=friction*a.inv*tx;a.vy-=friction*a.inv*ty;
  b.vx+=friction*b.inv*tx;b.vy+=friction*b.inv*ty;
