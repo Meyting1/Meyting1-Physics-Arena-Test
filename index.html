@@ -71,7 +71,7 @@ canvas.addEventListener('pointerdown',e=>{
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
  if(hit){selected=hit;aim={x:p.x,y:p.y};canvas.setPointerCapture(e.pointerId)}
 });
-canvas.addEventListener('pointermove',e=>{if(aim&&selected){const p=pos(e);aim.x=p.x;aim.y=p.y;const distance=Math.hypot(selected.x-p.x,selected.y-p.y);if(distance<=2.5){aim=null;selected=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);}}});
+canvas.addEventListener('pointermove',e=>{if(aim&&selected){const p=pos(e);aim.x=p.x;aim.y=p.y;const distance=Math.hypot(selected.x-p.x,selected.y-p.y);if(distance<=24){aim=null;selected=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);}}});
 canvas.addEventListener('pointerup',e=>{
  if(!aim||!selected)return;
  const p=pos(e),b=selected,dx=b.x-p.x,dy=b.y-p.y;
