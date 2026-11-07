@@ -64,20 +64,30 @@ function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*
 function showToast(title,sub){$('toastTitle').textContent=title;$('toastSub').textContent=sub;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1500)}
 function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aimPct=clamp(len/150,0,1);const power=1100*Math.pow(aimPct,1.8)*(b.kind==='ball'?1.25:1);b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7],teamB=[1,4,6,8];
+let activePointerId=null;
 canvas.addEventListener('pointerdown',e=>{
+ e.preventDefault();
  if(moving()||turn!=='A')return;
  const p=pos(e);
- let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<b.r+18)
-   .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};canvas.setPointerCapture(e.pointerId)}
+ const hit=teamA.map(i=>bodies[i]).filter(token=>Math.hypot(p.x-token.x,p.y-token.y)<token.r+24)
+  .sort((x,y)=>Math.hypot(p.x-x.x,p.y-x.y)-Math.hypot(p.x-y.x,p.y-y.y))[0];
+ if(hit){selected=hit;aim={x:p.x,y:p.y};activePointerId=e.pointerId;try{canvas.setPointerCapture(e.pointerId)}catch{}}
 });
-canvas.addEventListener('pointermove',e=>{if(aim&&selected){const p=pos(e);aim.x=p.x;aim.y=p.y;const distance=Math.hypot(selected.x-p.x,selected.y-p.y);if(distance<=24){aim=null;selected=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);}}});
+canvas.addEventListener('pointermove',e=>{
+ if(!aim||!selected||e.pointerId!==activePointerId)return;
+ e.preventDefault();const p=pos(e);aim.x=p.x;aim.y=p.y;
+});
 canvas.addEventListener('pointerup',e=>{
- if(!aim||!selected)return;
- const p=pos(e),b=selected,dx=b.x-p.x,dy=b.y-p.y;
- strike(b,dx,dy);aim=null;selected=null;
+ if(!aim||!selected||e.pointerId!==activePointerId)return;
+ e.preventDefault();const p=pos(e),token=selected,dx=token.x-p.x,dy=token.y-p.y;
+ aim=null;selected=null;activePointerId=null;
+ if(Math.hypot(dx,dy)>=3)strike(token,dx,dy);
 });
-canvas.addEventListener('pointercancel',()=>{aim=null;selected=null});
+canvas.addEventListener('pointercancel',e=>{
+ if(e.pointerId!==activePointerId)return;
+ aim=null;selected=null;activePointerId=null;
+});
+
 function physics(h){
  // h is a fixed 1/120-second step. Velocities are pixels per second.
  for(const b of bodies){
