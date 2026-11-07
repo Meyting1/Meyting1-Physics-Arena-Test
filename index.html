@@ -83,8 +83,11 @@ function physics(h){
  for(const b of bodies){
   const speed=Math.hypot(b.vx,b.vy);
   if(speed>0){
-   const rolling=b.kind==='ball'?420:900;
-   const next=Math.max(0,speed-rolling*h),factor=next/speed;
+   // Smooth rolling resistance: retain more speed at the start, then
+   // let the motion ease naturally into a stop instead of losing a
+   // fixed amount of speed every frame.
+   const drag=b.kind==='ball'?1.15:1.65;
+   const factor=Math.exp(-drag*h);
    b.vx*=factor;b.vy*=factor;
   }
   // A small Magnus-like curve is driven by spin, not an arbitrary per-frame boost.
