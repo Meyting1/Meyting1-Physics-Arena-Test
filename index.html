@@ -15,7 +15,7 @@
 .avatar{width:46px;height:46px;flex:0 0 46px;border:3px solid #c4b58a;border-radius:5px;background:linear-gradient(145deg,#f7f7f2,#9b9c96);box-shadow:0 1px 5px #0008;display:grid;place-items:center;overflow:hidden}.avatar{font-weight:1000;font-size:22px;text-shadow:0 1px 3px #0009}.avatar-a{color:#fff;background:radial-gradient(circle at 30% 25%,#73b9ff,#155ba5 65%,#082c57)}.avatar-b{color:#fff;background:radial-gradient(circle at 30% 25%,#ff8989,#c91e2d 65%,#650e18)}
 .match-center{min-width:92px;padding:3px 10px;text-align:center;background:linear-gradient(180deg,#333430,#11120f);border:1px solid #706d62;border-radius:0 0 8px 8px;color:#fff;align-self:stretch;display:flex;flex-direction:column;justify-content:center;box-shadow:0 3px 7px #0008}
 .scoreline{display:flex;align-items:center;justify-content:center;gap:12px;font-weight:900;font-size:clamp(24px,5vw,34px);font-variant-numeric:tabular-nums}.scoreline span{color:#a8a79f;font-size:20px}.stake-slot{height:12px;margin-top:2px;font-size:9px;color:#d9d8d0}#turn{font-size:9px;color:#d5d8cf;letter-spacing:.08em;margin-right:7px}
-.arena-wrap{position:relative;flex:1;min-height:0;width:100%;aspect-ratio:820/520;max-height:calc(100vh - 128px);display:flex;align-items:center;justify-content:center}
+.arena-wrap{position:relative;flex:1;min-height:0;width:100%;aspect-ratio:520/820;max-height:calc(100vh - 128px);display:flex;align-items:center;justify-content:center}
 canvas{display:block;width:100%;height:100%;max-height:100%;border-radius:5px;box-shadow:0 12px 32px #0009;touch-action:none}
 .overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}.toast{background:#101713ed;border:1px solid #f0d38a;border-radius:10px;padding:12px 18px;text-align:center;box-shadow:0 0 24px #0008;opacity:0;transform:translateY(8px);transition:.2s}.toast.show{opacity:1;transform:translateY(0)}.toast b{display:block;color:#f6d98e;font-size:18px}
 .controls{display:flex;justify-content:space-between;align-items:center;gap:8px;color:#c0c8bd;font-size:11px;min-height:34px}button{border:1px solid #756c54;background:linear-gradient(180deg,#393a34,#1d201c);color:#f7f4e9;padding:8px 12px;border-radius:7px;font-weight:800;font-size:11px}button:active{transform:scale(.97)}.hint{line-height:1.35;max-width:72%}
@@ -38,16 +38,16 @@ canvas{display:block;width:100%;height:100%;max-height:100%;border-radius:5px;bo
 'use strict';
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
-const W=820,H=520,wall=20,goalW=166,goalDepth=26;
+const W=520,H=820,wall=20,goalW=170,goalDepth=26;
 let dpr=1,scale=1,ox=0,oy=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
 const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0,angle:0});
 function setup(){
  bodies.length=0;
- bodies.push(make(W*.22,H/2,27,5,'#1559a5','strikerA'));
- bodies.push(make(W*.78,H/2,27,5,'#c92832','strikerB'));
+ bodies.push(make(W/2,H*.76,27,5,'#1559a5','strikerA'));
+ bodies.push(make(W/2,H*.24,27,5,'#c92832','strikerB'));
  bodies.push(make(W/2,H/2,10,.82,'#f5fbff','ball'));
- for(let i=0;i<3;i++){bodies.push(make(W*.37,H/2+(i-1)*54,22,5,'#1559a5','discA'));bodies.push(make(W*.63,H/2+(i-1)*54,22,5,'#c92832','discB'));}
+ for(let i=0;i<3;i++){bodies.push(make(W/2+(i-1)*47,H*.61,22,5,'#1559a5','discA'));bodies.push(make(W/2+(i-1)*47,H*.39,22,5,'#c92832','discB'));}
  particles=[];trails=[];aim=null;selected=null;turn='A';settleTimer=0;updateTurn();
 }
 function resize(){
@@ -99,11 +99,11 @@ function physics(h){
   b.angle+=(Math.hypot(b.vx,b.vy)/b.r+b.spin)*h;
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
-  const inGoal=b.kind==='ball'&&b.y>H/2-goalW/2+b.r*.25&&b.y<H/2+goalW/2-b.r*.25;
-  if(b.x-b.r<wall&&!inGoal){b.x=wall+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.x+b.r>W-wall&&!inGoal){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.y-b.r<wall){b.y=wall+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.y+b.r>H-wall){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
+  if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.y-b.r<wall&&!inGoal){b.y=wall+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.y+b.r>H-wall&&!inGoal){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
@@ -111,8 +111,8 @@ function physics(h){
  const ballSpeed=Math.hypot(bodies[2].vx,bodies[2].vy);
  if(ballSpeed>1400){bodies[2].vx*=1400/ballSpeed;bodies[2].vy*=1400/ballSpeed}
  const ball=bodies[2];
- if(ball.x>W+ball.r*.5){scoreA++;goal('A')}
- else if(ball.x<-ball.r*.5){scoreB++;goal('B')}
+ if(ball.y<-ball.r*.5){scoreA++;goal('A')}
+ else if(ball.y>H+ball.r*.5){scoreB++;goal('B')}
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
@@ -144,14 +144,14 @@ function collide(a,b){
  if(j>95){playTone(clamp(105+j*.20,120,420),.035,'sine',.01);if(j>230)burst((a.x+b.x)/2,(a.y+b.y)/2,'#d8ffff',4)}
 }
 function goal(who){if(who==='A'){$('scoreA').textContent=scoreA}else{$('scoreB').textContent=scoreB}
- burst(W/2,who==='A'?18:H-18,who==='A'?'#53f5e8':'#ff4f9a',42);playTone(520,.28,'sawtooth',.04);showToast(who==='A'?'GOAL!':'OPPONENT SCORES',who==='A'?'Clean finish':'Keep going');setup();$('scoreA').textContent=scoreA;$('scoreB').textContent=scoreB;}
+ burst(W/2,who==='A'?H-18:18,who==='A'?'#53f5e8':'#ff4f9a',42);playTone(520,.28,'sawtooth',.04);showToast(who==='A'?'GOAL!':'OPPONENT SCORES',who==='A'?'Clean finish':'Keep going');setup();$('scoreA').textContent=scoreA;$('scoreB').textContent=scoreB;}
 function ai(){
  if(turn!=='B'||moving()||aim)return;
  const ball=bodies[2];
  // The opponent can choose any of its four discs, not just its starting striker.
  const striker=teamB.map(i=>bodies[i]).sort((a,b)=>Math.hypot(a.x-ball.x,a.y-ball.y)-Math.hypot(b.x-ball.x,b.y-ball.y))[0];
- const targetX=ball.x-72;
- const dx=targetX-striker.x,dy=ball.y-striker.y;
+ const targetX=clamp(ball.x+(W/2-ball.x)*.10,W*.22,W*.78);
+ const dx=targetX-striker.x,dy=(ball.y+58)-striker.y;
  const len=Math.hypot(dx,dy)||1;
  strike(striker,dx/len*108,dy/len*108);
 }
@@ -177,16 +177,20 @@ function drawClassicBall(b){
  ctx.strokeStyle='#5b5d5b';ctx.lineWidth=Math.max(.7,r*.025);ctx.beginPath();ctx.arc(0,0,r*.88,0,Math.PI*2);ctx.stroke();ctx.restore();ctx.restore();
 }
 function draw(){
- ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#172219';ctx.fillRect(ox,oy,W*scale,H*scale);ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
- const grass=ctx.createLinearGradient(0,0,0,H);grass.addColorStop(0,'#147443');grass.addColorStop(.5,'#0b5e34');grass.addColorStop(1,'#0a512d');ctx.fillStyle=grass;ctx.fillRect(0,0,W,H);
- for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#ffffff09':'#002e160e';ctx.fillRect(i*W/10,0,W/10,H)}
+ ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.fillStyle='#172219';ctx.fillRect(ox,oy,W*scale,H*scale);ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
+ // Portrait grass pitch, with the same vertical orientation as the original game.
+ const grass=ctx.createLinearGradient(0,0,W,0);grass.addColorStop(0,'#0b5c31');grass.addColorStop(.5,'#147743');grass.addColorStop(1,'#0b5c31');ctx.fillStyle=grass;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<10;i++){ctx.fillStyle=i%2?'#ffffff09':'#002e160e';ctx.fillRect(0,i*H/10,W,H/10)}
+ // Gold outer frame and classic white football markings.
  ctx.strokeStyle='#b8954d';ctx.lineWidth=9;ctx.strokeRect(5,5,W-10,H-10);ctx.strokeStyle='#f4f0d5';ctx.lineWidth=2.2;ctx.strokeRect(wall,wall,W-2*wall,H-2*wall);
- ctx.beginPath();ctx.moveTo(W/2,wall);ctx.lineTo(W/2,H-wall);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,76,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#f6f2df';ctx.beginPath();ctx.arc(W/2,H/2,4,0,Math.PI*2);ctx.fill();
- ctx.strokeRect(wall,H/2-116,102,232);ctx.strokeRect(W-wall-102,H/2-116,102,232);ctx.strokeRect(wall,H/2-65,46,130);ctx.strokeRect(W-wall-46,H/2-65,46,130);
- ctx.beginPath();ctx.arc(wall+73,H/2,3,0,Math.PI*2);ctx.arc(W-wall-73,H/2,3,0,Math.PI*2);ctx.fill();
- ctx.fillStyle='#b18a42';ctx.fillRect(0,H/2-goalW/2-7,wall+4,goalW+14);ctx.fillStyle='#b9c0b6';ctx.fillRect(0,H/2-goalW/2,wall-5,goalW);
- ctx.fillStyle='#b18a42';ctx.fillRect(W-wall-4,H/2-goalW/2-7,wall+4,goalW+14);ctx.fillStyle='#b9c0b6';ctx.fillRect(W-wall+5,H/2-goalW/2,wall-5,goalW);
- ctx.strokeStyle='#f5e6b5';ctx.lineWidth=1;ctx.strokeRect(1,H/2-goalW/2,wall-5,goalW);ctx.strokeRect(W-wall+5,H/2-goalW/2,wall-6,goalW);
+ ctx.beginPath();ctx.moveTo(wall,H/2);ctx.lineTo(W-wall,H/2);ctx.stroke();ctx.beginPath();ctx.arc(W/2,H/2,76,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#f6f2df';ctx.beginPath();ctx.arc(W/2,H/2,4,0,Math.PI*2);ctx.fill();
+ ctx.strokeRect(W/2-116,wall,232,102);ctx.strokeRect(W/2-116,H-wall-102,232,102);ctx.strokeRect(W/2-65,wall,130,46);ctx.strokeRect(W/2-65,H-wall-46,130,46);
+ ctx.beginPath();ctx.arc(W/2,wall+73,3,0,Math.PI*2);ctx.arc(W/2,H-wall-73,3,0,Math.PI*2);ctx.fill();
+ // Gold-framed goal mouths at the short ends.
+ ctx.fillStyle='#b18a42';ctx.fillRect(W/2-goalW/2-7,0,goalW+14,wall+4);ctx.fillStyle='#b9c0b6';ctx.fillRect(W/2-goalW/2,0,goalW,wall-5);
+ ctx.fillStyle='#b18a42';ctx.fillRect(W/2-goalW/2-7,H-wall-4,goalW+14,wall+4);ctx.fillStyle='#b9c0b6';ctx.fillRect(W/2-goalW/2,H-wall+5,goalW,wall-5);
+ ctx.strokeStyle='#f5e6b5';ctx.lineWidth=1;ctx.strokeRect(W/2-goalW/2,1,goalW,wall-5);ctx.strokeRect(W/2-goalW/2,H-wall+5,goalW,wall-6);
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  for(const b of bodies){if(b===selected){ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.shadowColor=b.color;ctx.shadowBlur=18;ctx.beginPath();ctx.arc(b.x,b.y,b.r+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
   if(Math.hypot(b.vx,b.vy)>.6&&b.kind==='ball')trails.push({x:b.x,y:b.y,r:b.r*.8,color:'#fff',life:18});
