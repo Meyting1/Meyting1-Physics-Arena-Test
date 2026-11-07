@@ -62,7 +62,7 @@ function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.012)}
 function playTone(freq=260,dur=.06,type='sine',vol=.035){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.stop(audio.currentTime+dur)}catch{}}
 function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:35+Math.random()*20,color,r:1+Math.random()*3})}}
 function showToast(title,sub){$('toastTitle').textContent=title;$('toastSub').textContent=sub;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1500)}
-function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<8)return;const power=Math.min(len,150)*.34;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=(dx*b.vy-dy*b.vx)*.002;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
+function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<8)return;const power=Math.min(len,150)*.48;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=(dx*b.vy-dy*b.vx)*.002;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7],teamB=[1,4,6,8];
 canvas.addEventListener('pointerdown',e=>{
  if(moving()||turn!=='A')return;
@@ -87,7 +87,7 @@ function physics(dt){
    // The ball has its own rolling model: it keeps momentum, rotates as it travels,
    // and its sidespin adds a subtle curved flight across the pitch.
    const isBall=b.kind==='ball';
-   const drag=Math.pow(.985,h*60);b.vx*=drag;b.vy*=drag;
+   const speedBefore=Math.hypot(b.vx,b.vy);\n   // Preserve momentum while the disc is moving quickly; increase rolling resistance\n   // smoothly only as it approaches rest, so the final stop is gentle.\n   const glide=clamp(speedBefore/16,0,1);\n   const drag=Math.pow(.985+.013*glide,h*60);b.vx*=drag;b.vy*=drag;
    if(isBall){
     const speedNow=Math.hypot(b.vx,b.vy);
     b.angle+=(speedNow/b.r+b.spin)*h;
@@ -97,7 +97,7 @@ function physics(dt){
    }else{b.spin*=Math.pow(.994,h*60);}
    const speed=Math.hypot(b.vx,b.vy);
    if(speed<.018){b.vx=0;b.vy=0}
-   const maxSpeed=b.kind==='ball'?78:62;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
+   const maxSpeed=b.kind==='ball'?90:78;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
    const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
    if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
    if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
