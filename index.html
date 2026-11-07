@@ -87,7 +87,11 @@ function physics(dt){
    // The ball has its own rolling model: it keeps momentum, rotates as it travels,
    // and its sidespin adds a subtle curved flight across the pitch.
    const isBall=b.kind==='ball';
-   const speedBefore=Math.hypot(b.vx,b.vy);\n   // Preserve momentum while the disc is moving quickly; increase rolling resistance\n   // smoothly only as it approaches rest, so the final stop is gentle.\n   const glide=clamp(speedBefore/16,0,1);\n   const drag=Math.pow(.985+.013*glide,h*60);b.vx*=drag;b.vy*=drag;
+   const speedBefore=Math.hypot(b.vx,b.vy);
+   // Preserve momentum while the disc is moving quickly; increase rolling resistance
+   // smoothly only as it approaches rest, so the final stop is gentle.
+   const glide=clamp(speedBefore/16,0,1);
+   const drag=Math.pow(.985+.013*glide,h*60);b.vx*=drag;b.vy*=drag;
    if(isBall){
     const speedNow=Math.hypot(b.vx,b.vy);
     b.angle+=(speedNow/b.r+b.spin)*h;
