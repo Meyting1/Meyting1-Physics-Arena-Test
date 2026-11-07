@@ -28,7 +28,7 @@ button:active{transform:scale(.97)}.hint{line-height:1.45;max-width:65%}
 </head>
 <body>
 <div id="app">
-<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · TRUE BALL ROLL & SPIN 0.5</div></header>
+<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · NATURAL MOMENTUM 0.6</div></header>
 <div class="hud"><div class="score"><div><div class="team">CYAN</div><strong id="scoreA">0</strong></div><span style="color:#49677b">:</span><div><div class="team">MAGENTA</div><strong id="scoreB">0</strong></div></div><div id="turn">YOUR TURN</div><button id="reset">RESTART</button></div>
 <div class="arena-wrap"><canvas id="game"></canvas><div class="overlay"><div class="toast" id="toast"><b id="toastTitle">GOAL!</b><span id="toastSub">Nice shot</span></div></div></div>
 <div class="controls"><div class="hint">Drag back from the glowing striker to aim, then release. Collisions, wall rebounds and rolling friction are simulated in real time.</div><button id="sound">SOUND: ON</button></div>
@@ -58,7 +58,7 @@ function resize(){
 function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*dpr/scale-ox/scale,y:(e.clientY-r.top)*dpr/scale-oy/scale}}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function updateTurn(){$('turn').textContent=turn==='A'?'YOUR TURN':'OPPONENT TURN';}
-function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.32)}
+function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.012)}
 function playTone(freq=260,dur=.06,type='sine',vol=.035){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.stop(audio.currentTime+dur)}catch{}}
 function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:35+Math.random()*20,color,r:1+Math.random()*3})}}
 function showToast(title,sub){$('toastTitle').textContent=title;$('toastSub').textContent=sub;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),1500)}
@@ -87,16 +87,16 @@ function physics(dt){
    // The ball has its own rolling model: it keeps momentum, rotates as it travels,
    // and its sidespin adds a subtle curved flight across the pitch.
    const isBall=b.kind==='ball';
-   const drag=Math.pow(isBall?.99935:.9965,h*60);b.vx*=drag;b.vy*=drag;
+   const drag=Math.pow(isBall?.99982:.99925,h*60);b.vx*=drag;b.vy*=drag;
    if(isBall){
     const speedNow=Math.hypot(b.vx,b.vy);
     b.angle+=(speedNow/b.r+b.spin)*h;
     const curve=clamp(b.spin*speedNow*.055,-.11,.11);
     const vx=b.vx,vy=b.vy;b.vx+=-vy*curve*h;b.vy+=vx*curve*h;
     b.spin*=Math.pow(.9985,h*60);
-   }else{b.vx*=Math.pow(.9997,h*60);b.vy*=Math.pow(.9997,h*60);b.spin*=Math.pow(.994,h*60);}
+   }else{b.spin*=Math.pow(.994,h*60);}
    const speed=Math.hypot(b.vx,b.vy);
-   if(speed<.035){b.vx=0;b.vy=0}
+   if(speed<.018){b.vx=0;b.vy=0}
    const maxSpeed=b.kind==='ball'?78:62;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
    const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
    if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
