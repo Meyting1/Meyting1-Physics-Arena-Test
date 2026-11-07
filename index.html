@@ -28,7 +28,7 @@ button:active{transform:scale(.97)}.hint{line-height:1.45;max-width:65%}
 </head>
 <body>
 <div id="app">
-<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · SMOOTH ROLL & MOMENTUM 0.7</div></header>
+<header><div class="brand">NEON <span>PITCH</span></div><div id="status">PHYSICS LAB · FAST MOMENTUM & SOFT STOP 0.8</div></header>
 <div class="hud"><div class="score"><div><div class="team">CYAN</div><strong id="scoreA">0</strong></div><span style="color:#49677b">:</span><div><div class="team">MAGENTA</div><strong id="scoreB">0</strong></div></div><div id="turn">YOUR TURN</div><button id="reset">RESTART</button></div>
 <div class="arena-wrap"><canvas id="game"></canvas><div class="overlay"><div class="toast" id="toast"><b id="toastTitle">GOAL!</b><span id="toastSub">Nice shot</span></div></div></div>
 <div class="controls"><div class="hint">Drag back from the glowing striker to aim, then release. Collisions, wall rebounds and rolling friction are simulated in real time.</div><button id="sound">SOUND: ON</button></div>
@@ -87,7 +87,7 @@ function physics(dt){
    // The ball has its own rolling model: it keeps momentum, rotates as it travels,
    // and its sidespin adds a subtle curved flight across the pitch.
    const isBall=b.kind==='ball';
-   const drag=Math.pow(.975,h*60);b.vx*=drag;b.vy*=drag;
+   const drag=Math.pow(.985,h*60);b.vx*=drag;b.vy*=drag;
    if(isBall){
     const speedNow=Math.hypot(b.vx,b.vy);
     b.angle+=(speedNow/b.r+b.spin)*h;
@@ -97,7 +97,7 @@ function physics(dt){
    }else{b.spin*=Math.pow(.994,h*60);}
    const speed=Math.hypot(b.vx,b.vy);
    if(speed<.018){b.vx=0;b.vy=0}
-   const maxSpeed=b.kind==='ball'?30:24;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
+   const maxSpeed=b.kind==='ball'?78:62;if(speed>maxSpeed){b.vx*=maxSpeed/speed;b.vy*=maxSpeed/speed}
    const inGoal=b.kind==='ball'&&b.x>W/2-goalW/2+b.r*.25&&b.x<W/2+goalW/2-b.r*.25;
    if(b.x-b.r<wall){b.x=wall+b.r;b.vx=Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
    if(b.x+b.r>W-wall){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*.94;wallFX(b.x,b.y)}
