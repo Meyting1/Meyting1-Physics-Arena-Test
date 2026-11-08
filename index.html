@@ -63,12 +63,11 @@ function updateSharedAim(pointerId,p){
  // High sensitivity: a very small finger movement produces a clear aim adjustment.
  const AIM_SENSITIVITY=1;
  const v={x:base.x-(p.x-previous.x)*AIM_SENSITIVITY,y:base.y-(p.y-previous.y)*AIM_SENSITIVITY};
- if(Math.hypot(v.x,v.y)>0.01){
-  directionVector={x:v.x,y:v.y};
-  powerPull=directionVector;
-  lastAimPointerId=pointerId;
-  aim={x:p.x,y:p.y};
- }
+ // Always accept the updated vector, including when it passes through zero and reverses.
+ directionVector={x:v.x,y:v.y};
+ powerPull=directionVector;
+ lastAimPointerId=pointerId;
+ aim={x:p.x,y:p.y};
 }
 canvas.addEventListener('pointerdown',e=>{
  const p=pos(e);
@@ -86,6 +85,8 @@ canvas.addEventListener('pointerdown',e=>{
 canvas.addEventListener('pointermove',e=>{
  if(!selected||!activePointers.has(e.pointerId))return;
  const p=pos(e);
+ const previous=pointerPositions.get(e.pointerId);
+ if(!previous)return;
  updateSharedAim(e.pointerId,p);
  pointerPositions.set(e.pointerId,p);
 });
