@@ -56,15 +56,13 @@ let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull
 const pointerPositions=new Map();
 function updateSharedAim(pointerId,p){
  if(!selected)return;
- // Either finger can now set BOTH shot strength and direction.
- // Pulling away from the selected piece determines the shot vector.
+ // One shared vector controls both the dotted guide and the actual shot.
+ // Moving either finger changes this exact vector.
  const v={x:selected.x-p.x,y:selected.y-p.y};
- if(Math.hypot(v.x,v.y)>4){
-  powerPull={x:v.x,y:v.y};
-  directionVector={x:v.x,y:v.y};
-  lastAimPointerId=pointerId;
-  aim={x:p.x,y:p.y};
- }
+ powerPull={x:v.x,y:v.y};
+ directionVector={x:v.x,y:v.y};
+ lastAimPointerId=pointerId;
+ aim={x:p.x,y:p.y};
 }
 canvas.addEventListener('pointerdown',e=>{
  const p=pos(e);
@@ -218,12 +216,16 @@ function draw(){
   }
   ctx.restore();
  }
- if(aim&&selected){const b=selected,dx=b.x-aim.x,dy=b.y-aim.y,len=Math.hypot(dx,dy),power=Math.min(len,150);
- ctx.strokeStyle='#53f5e8';ctx.lineWidth=4;ctx.setLineDash([9,8]);ctx.globalAlpha=.8;ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+dx*.85,b.y+dy*.85);ctx.stroke();ctx.setLineDash([]);ctx.globalAlpha=1;
- ctx.fillStyle='#53f5e8';ctx.globalAlpha=.12+power/190;ctx.beginPath();ctx.arc(b.x,b.y,b.r+10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
- ctx.fillStyle='#b7fff9';ctx.font='bold 13px system-ui';ctx.fillText('POWER '+Math.round(power/150*100)+'%',b.x+35,b.y-34);
+ if(selected&&powerPull){
+ const b=selected,len=Math.hypot(powerPull.x,powerPull.y),shownLength=Math.min(len,150),power=Math.min(len,150);
+ const nx=len>0?powerPull.x/len:0,ny=len>0?powerPull.y/len:0;
+ // The single dotted guide uses the exact same direction and normalized strength as strike().
+ ctx.strokeStyle='#ffd166';ctx.lineWidth=4;ctx.setLineDash([9,8]);ctx.globalAlpha=.95;
+ ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+nx*shownLength,b.y+ny*shownLength);ctx.stroke();
+ ctx.setLineDash([]);ctx.globalAlpha=1;
+ ctx.fillStyle='#ffd166';ctx.globalAlpha=.12+power/190;ctx.beginPath();ctx.arc(b.x,b.y,b.r+10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+ ctx.fillStyle='#fff0c2';ctx.font='bold 13px system-ui';ctx.fillText('AIM '+Math.round(power/150*100)+'%',b.x+35,b.y-34);
  }
- if(selected&&usedSecondFinger&&directionVector){const dl=Math.hypot(directionVector.x,directionVector.y);if(dl>4){ctx.strokeStyle='#ffd166';ctx.lineWidth=5;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(selected.x,selected.y);ctx.lineTo(selected.x+directionVector.x/dl*95,selected.y+directionVector.y/dl*95);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ffd166';ctx.font='bold 13px system-ui';ctx.fillText('DIRECTION',selected.x+directionVector.x/dl*100,selected.y+directionVector.y/dl*100);}}
  for(const p of particles){ctx.globalAlpha=clamp(p.life/45,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  ctx.restore();
  particles=particles.filter(p=>p.life-->0);for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vx*=.96;p.vy*=.96}
