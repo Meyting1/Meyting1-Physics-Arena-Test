@@ -60,9 +60,9 @@ function setup(){
 function resize(){
  const rect=canvas.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);
  canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.height*dpr));
- scale=Math.min(canvas.width/W,canvas.height/H);ox=(canvas.width-W*scale)/2;oy=(canvas.height-H*scale)/2;
+ scale=Math.min(canvas.width/H,canvas.height/W);ox=(canvas.width-H*scale)/2;oy=(canvas.height-W*scale)/2;
 }
-function pos(e){const r=canvas.getBoundingClientRect();return{x:(e.clientX-r.left)*dpr/scale-ox/scale,y:(e.clientY-r.top)*dpr/scale-oy/scale}}
+function pos(e){const r=canvas.getBoundingClientRect();const sx=(e.clientX-r.left)*dpr/scale-ox/scale,sy=(e.clientY-r.top)*dpr/scale-oy/scale;return{x:sy,y:H-sx}}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function updateTurn(){$('turn').textContent=turn==='A'?'YOUR TURN':'OPPONENT TURN';}
 function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.8)}
@@ -164,7 +164,7 @@ function ai(){
 }
 function draw(){
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle='#061523';ctx.fillRect(ox,oy,W*scale,H*scale);ctx.save();ctx.translate(ox,oy);ctx.scale(scale,scale);
+ ctx.fillStyle='#061523';ctx.fillRect(ox,oy,H*scale,W*scale);ctx.save();ctx.translate(ox+H*scale,oy);ctx.rotate(Math.PI/2);ctx.scale(scale,scale);
  if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  for(const b of bodies){
