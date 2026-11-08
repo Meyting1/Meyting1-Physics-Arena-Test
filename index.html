@@ -84,19 +84,26 @@ function beginAim(p,id){
   gestureVector={x:hit.x-p.x,y:hit.y-p.y};
   twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;directionUnit=null;
   gestureCancelled=false;aim={x:p.x,y:p.y};
- }else if(directionPointerId===null&&powerPointerId!==null){
-  // Finger 2 marks an absolute target point; finger 1 remains the power control.
-  twoFingerMode=true;directionPointerId=id;
-  // Keep an independent copy of the pull-back vector for power only.
-  dualPowerVector={x:gestureVector.x,y:gestureVector.y};
-  powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
-  const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
-  if(len>3)directionUnit={x:dx/len,y:dy/len};
-  else{
-   const currentLen=Math.hypot(gestureVector.x,gestureVector.y)||1;
-   directionUnit={x:gestureVector.x/currentLen,y:gestureVector.y/currentLen};
+ }else if(activePointers.size===1&&selected){
+  // Reassign whichever control finger was lifted while the other one remains down.
+  twoFingerMode=true;
+  if(powerPointerId===null&&directionPointerId!==null){
+   // A new finger takes over power, starting from the current aim magnitude.
+   powerPointerId=id;
+   dualPowerVector={x:gestureVector.x,y:gestureVector.y};
+   powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
+   powerStart=p;
+  }else if(directionPointerId===null&&powerPointerId!==null){
+   // A new finger takes over direction by marking a fresh target point.
+   directionPointerId=id;
+   const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
+   if(len>3)directionUnit={x:dx/len,y:dy/len};
+   else{
+    const currentLen=Math.hypot(gestureVector.x,gestureVector.y)||1;
+    directionUnit={x:gestureVector.x/currentLen,y:gestureVector.y/currentLen};
+   }
+   refreshAim();
   }
-  refreshAim();
  }
  activePointers.add(id);pointerPositions.set(id,p);
 }
