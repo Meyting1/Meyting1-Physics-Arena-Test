@@ -146,7 +146,8 @@ function moveAim(id,p){
    const dx=directionPoint.x-powerPoint.x,dy=directionPoint.y-powerPoint.y;
    const distance=Math.hypot(dx,dy),angle=Math.atan2(dy,dx);
    powerLength=clamp(pinchBasePower+(distance-pinchStartDistance),0,150);
-   const shotAngle=pinchBaseDirection+(angle-pinchStartAngle);
+   const angleDelta=Math.atan2(Math.sin(angle-pinchStartAngle),Math.cos(angle-pinchStartAngle));
+   const shotAngle=pinchBaseDirection+angleDelta;
    directionUnit={x:Math.cos(shotAngle),y:Math.sin(shotAngle)};
    refreshAim();
   }
