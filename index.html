@@ -54,74 +54,101 @@ function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aim
 const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
 let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull=null,directionVector=null,directionStart=null,usedSecondFinger=false,lastAimPointerId=null;
 const pointerPositions=new Map();
+const touchPositions=new Map();
+function screenPoint(clientX,clientY){
+ const r=canvas.getBoundingClientRect();
+ const sx=(clientX-r.left)*dpr/scale-ox/scale,sy=(clientY-r.top)*dpr/scale-oy/scale;
+ return{x:sy,y:H-sx};
+}
 function updateSharedAim(pointerId,p){
  if(!selected)return;
  const previous=pointerPositions.get(pointerId);
  if(!previous)return;
- // Each active finger contributes its movement to the same pull vector.
  const base=directionVector||{x:0,y:0};
- // High sensitivity: a very small finger movement produces a clear aim adjustment.
- const AIM_SENSITIVITY=1;
- const v={x:base.x-(p.x-previous.x)*AIM_SENSITIVITY,y:base.y-(p.y-previous.y)*AIM_SENSITIVITY};
- // Always accept the updated vector, including when it passes through zero and reverses.
- directionVector={x:v.x,y:v.y};
+ const AIM_SENSITIVITY=1.35;
+ directionVector={x:base.x-(p.x-previous.x)*AIM_SENSITIVITY,y:base.y-(p.y-previous.y)*AIM_SENSITIVITY};
  powerPull=directionVector;
  lastAimPointerId=pointerId;
  aim={x:p.x,y:p.y};
 }
-canvas.addEventListener('pointerdown',e=>{
- const p=pos(e);
- if(selected&&aimPointerId!==null&&e.pointerId!==aimPointerId&&directionPointerId===null){
-  directionStart=p;directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);pointerPositions.set(e.pointerId,p);
-  try{canvas.setPointerCapture(e.pointerId)}catch{}
-  // The second finger starts contributing from its own touch point; it does not replace the current aim.
-  e.preventDefault();return;
+function beginAim(p,id){
+ if(selected&&activePointers.size>0){
+  if(activePointers.has(id)||activePointers.size>=2)return;
+  directionPointerId=id;usedSecondFinger=true;activePointers.add(id);pointerPositions.set(id,p);
+  return;
  }
- if(selected&&activePointers.size>0){e.preventDefault();return;}
  if(aimPointerId!==null||moving()||turn!=='A')return;
- let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
-   .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;directionVector={x:hit.x-p.x,y:hit.y-p.y};powerPull=directionVector;directionStart=null;usedSecondFinger=false;lastAimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pointerPositions.clear();pointerPositions.set(e.pointerId,p);try{canvas.setPointerCapture(e.pointerId)}catch{};e.preventDefault()}
+ const hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
+  .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
+ if(!hit)return;
+ selected=hit;aim={x:p.x,y:p.y};aimPointerId=id;directionPointerId=null;
+ directionVector={x:hit.x-p.x,y:hit.y-p.y};powerPull=directionVector;
+ directionStart=null;usedSecondFinger=false;lastAimPointerId=id;
+ activePointers=new Set([id]);pointerPositions.clear();pointerPositions.set(id,p);
+}
+function finishAimPointer(id,cancelled=false){
+ if(!activePointers.has(id))return;
+ activePointers.delete(id);pointerPositions.delete(id);
+ if(id===aimPointerId)aimPointerId=null;
+ if(id===directionPointerId)directionPointerId=null;
+ if(activePointers.size===0){
+  if(!cancelled&&selected&&directionVector)strike(selected,directionVector.x,directionVector.y);
+  selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();touchPositions.clear();
+ }
+}
+// Touch Events are used on phones: unlike synthesized pointer events, changedTouches
+// reliably reports each finger independently during a two-finger gesture.
+canvas.addEventListener('touchstart',e=>{
+ e.preventDefault();
+ for(const t of e.changedTouches){
+  const id='t'+t.identifier;
+  if(activePointers.size>=2)continue;
+  const p=screenPoint(t.clientX,t.clientY);
+  beginAim(p,id);
+  if(activePointers.has(id))touchPositions.set(t.identifier,id);
+ }
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+ e.preventDefault();
+ for(const t of e.changedTouches){
+  const id=touchPositions.get(t.identifier);
+  if(!id||!activePointers.has(id))continue;
+  const p=screenPoint(t.clientX,t.clientY);
+  updateSharedAim(id,p);
+  pointerPositions.set(id,p);
+ }
+},{passive:false});
+canvas.addEventListener('touchend',e=>{
+ e.preventDefault();
+ for(const t of e.changedTouches){
+  const id=touchPositions.get(t.identifier);
+  if(id){finishAimPointer(id,false);touchPositions.delete(t.identifier);}
+ }
+},{passive:false});
+canvas.addEventListener('touchcancel',e=>{
+ for(const t of e.changedTouches){
+  const id=touchPositions.get(t.identifier);
+  if(id){finishAimPointer(id,true);touchPositions.delete(t.identifier);}
+ }
+},{passive:false});
+// Keep mouse/pen support; ignore touch pointer events to avoid double-processing.
+canvas.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='touch')return;
+ const p=pos(e);beginAim(p,e.pointerId);
+ if(activePointers.has(e.pointerId)){try{canvas.setPointerCapture(e.pointerId)}catch{}}
 });
 window.addEventListener('pointermove',e=>{
- if(!selected||!activePointers.has(e.pointerId))return;
- e.preventDefault();
- const p=pos(e);
- const previous=pointerPositions.get(e.pointerId);
- if(!previous)return;
- updateSharedAim(e.pointerId,p);
- pointerPositions.set(e.pointerId,p);
-},{capture:true,passive:false});
+ if(e.pointerType==='touch'||!selected||!activePointers.has(e.pointerId))return;
+ const p=pos(e);updateSharedAim(e.pointerId,p);pointerPositions.set(e.pointerId,p);
+},{capture:true});
 window.addEventListener('pointerup',e=>{
- if(!activePointers.has(e.pointerId))return;
- e.preventDefault();
- // Keep the last displayed aim vector unchanged when a finger is lifted.
- activePointers.delete(e.pointerId);pointerPositions.delete(e.pointerId);
- if(e.pointerId===aimPointerId)aimPointerId=null;
- if(e.pointerId===directionPointerId)directionPointerId=null;
- // Never fire on the first finger-up: wait until every active finger is lifted.
- if(activePointers.size===0){
-  if(selected&&powerPull){
-   // Fire from the very same vector object used to draw the dotted guide.
-   const finalShot=directionVector;
-   if(finalShot)strike(selected,finalShot.x,finalShot.y);
-  }
-  selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
- }
-},{capture:true,passive:false});
+ if(e.pointerType==='touch')return;
+ finishAimPointer(e.pointerId,false);
+},{capture:true});
 window.addEventListener('pointercancel',e=>{
- if(!activePointers.has(e.pointerId))return;
- // Cancel only the pointer that was interrupted; preserve the other finger's aim.
- activePointers.delete(e.pointerId);
- pointerPositions.delete(e.pointerId);
- if(e.pointerId===aimPointerId)aimPointerId=null;
- if(e.pointerId===directionPointerId)directionPointerId=null;
- if(activePointers.size===0){
-  selected=null;aim=null;aimPointerId=null;directionPointerId=null;
-  powerPull=null;directionVector=null;directionStart=null;
-  usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
- }
-},{capture:true,passive:false});
+ if(e.pointerType==='touch')return;
+ finishAimPointer(e.pointerId,true);
+},{capture:true});
 let physicsTick=0;
 function physics(h){
   physicsTick++;
