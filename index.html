@@ -293,31 +293,80 @@ function ai(){
  strike(striker,dx/len*108,dy/len*108);
 }
 function drawArenaEdits(){
- // Retouch only the requested UI areas; all pitch artwork remains the original image.
- // Empty avatar wells: preserve the gold frames, remove the silhouettes and portraits.
- const avatarWell=(x)=>{
-  const g=ctx.createLinearGradient(x,10,x+76,88);
-  g.addColorStop(0,'#292a29');g.addColorStop(.48,'#171918');g.addColorStop(1,'#30302d');
-  ctx.fillStyle=g;ctx.fillRect(x,11,76,76);
-  ctx.strokeStyle='rgba(255,255,255,.12)';ctx.lineWidth=1;ctx.strokeRect(x+.5,11.5,75,75);
+ // Rebuild only the top HUD. The original pitch and side artwork remain untouched.
+ const grad=(x,y,w,h,stops,vertical=true)=>{
+  const g=vertical?ctx.createLinearGradient(x,y,x,y+h):ctx.createLinearGradient(x,y,x+w,y);
+  for(const [p,c] of stops)g.addColorStop(p,c);
+  return g;
  };
- avatarWell(72);avatarWell(1422);
- // Remove player names while retaining the original level and star decorations.
- let g=ctx.createLinearGradient(265,0,355,0);
- g.addColorStop(0,'#e4e4e0');g.addColorStop(.55,'#d0d0cc');g.addColorStop(1,'#bcbcb8');
- ctx.fillStyle=g;ctx.fillRect(265,5,88,29);
- g=ctx.createLinearGradient(1190,0,1360,0);
- g.addColorStop(0,'#bcbcb8');g.addColorStop(.45,'#d0d0cc');g.addColorStop(1,'#e4e4e0');
- ctx.fillStyle=g;ctx.fillRect(1205,5,151,29);
- // Hide score numerals without changing the dark score panels.
- g=ctx.createLinearGradient(0,5,0,63);
- g.addColorStop(0,'#111');g.addColorStop(.5,'#050505');g.addColorStop(1,'#171717');
- ctx.fillStyle=g;ctx.fillRect(654,5,48,58);
- ctx.fillRect(874,5,48,58);
- // Hide the coin amount, keeping the silver coin panel and coin artwork.
- g=ctx.createLinearGradient(0,47,0,72);
- g.addColorStop(0,'#d7d7d2');g.addColorStop(.45,'#c4c4bf');g.addColorStop(1,'#b7b7b2');
- ctx.fillStyle=g;ctx.fillRect(747,48,75,24);
+ const path=(pts,fill,stroke='#171717',lw=2)=>{
+  ctx.beginPath();ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=1;i<pts.length;i++)ctx.lineTo(pts[i][0],pts[i][1]);
+  ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
+ };
+ const round=(x,y,w,h,r,fill,stroke='#5a554b',lw=2)=>{
+  ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
+ };
+ // Dark steel header base with a subtle brushed highlight and lower bevel.
+ ctx.fillStyle=grad(0,0,1529,101,[[0,'#080909'],[.18,'#222321'],[.52,'#151615'],[.82,'#090a09'],[1,'#030404']]);
+ ctx.fillRect(0,0,1529,101);
+ ctx.fillStyle='rgba(255,255,255,.10)';ctx.fillRect(0,0,1529,2);
+ ctx.fillStyle='rgba(255,255,255,.055)';ctx.fillRect(0,3,1529,1);
+ ctx.fillStyle='#050606';ctx.fillRect(0,96,1529,5);
+ ctx.fillStyle='rgba(205,180,121,.16)';ctx.fillRect(0,99,1529,1);
+ // Long silver player-name plates, left and right, deliberately blank.
+ path([[238,0],[617,0],[645,30],[622,68],[260,68]],grad(238,0,407,68,[[0,'#f1f1ee'],[.24,'#d8d8d4'],[.7,'#a9aaa6'],[1,'#777873']]),'#4c4b46',2);
+ path([[911,30],[939,0],[1291,0],[1268,68],[907,68]],grad(907,0,384,68,[[0,'#777873'],[.3,'#a9aaa6'],[.75,'#d8d8d4'],[1,'#f1f1ee']]),'#4c4b46',2);
+ // Fine bevel highlights on both name plates.
+ ctx.strokeStyle='rgba(255,255,255,.52)';ctx.lineWidth=1;
+ ctx.beginPath();ctx.moveTo(247,2);ctx.lineTo(613,2);ctx.lineTo(637,29);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(916,29);ctx.lineTo(941,2);ctx.lineTo(1284,2);ctx.stroke();
+ // Level labels and metallic star emblems remain; player names are not drawn.
+ ctx.font='bold 17px Arial';ctx.fillStyle='#20211f';ctx.textBaseline='middle';
+ ctx.textAlign='left';ctx.fillText('LV 150',510,37);
+ ctx.textAlign='right';ctx.fillText('LV 117',1020,37);
+ const star=(cx,cy,r)=>{
+  ctx.beginPath();
+  for(let i=0;i<10;i++){const an=-Math.PI/2+i*Math.PI/5,rad=i%2?r*.46:r,x=cx+Math.cos(an)*rad,y=cy+Math.sin(an)*rad;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+  ctx.closePath();ctx.fillStyle=grad(cx-r,cy-r,2*r,2*r,[[0,'#fff9d9'],[.25,'#d7d6c8'],[.55,'#8c8d86'],[.8,'#f0e8c9'],[1,'#686960']]);ctx.fill();
+  ctx.strokeStyle='#6c6656';ctx.lineWidth=2;ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;ctx.stroke();
+ };
+ star(583,34,16);star(986,34,16);
+ // Score housings are retained, with no score digits.
+ path([[621,0],[714,0],[740,27],[721,68],[624,68],[644,34]],grad(621,0,119,68,[[0,'#343432'],[.24,'#111211'],[.72,'#030404'],[1,'#222321']]),'#514b3f',2);
+ path([[815,0],[908,0],[886,34],[905,68],[808,68],[789,27]],grad(789,0,119,68,[[0,'#222321'],[.28,'#030404'],[.76,'#111211'],[1,'#343432']]),'#514b3f',2);
+ ctx.strokeStyle='rgba(255,255,255,.18)';ctx.lineWidth=1;
+ ctx.beginPath();ctx.moveTo(632,3);ctx.lineTo(710,3);ctx.lineTo(731,27);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(819,3);ctx.lineTo(900,3);ctx.lineTo(878,27);ctx.stroke();
+ // Central silver coin/value panel. Its value area stays empty.
+ ctx.save();ctx.shadowColor='rgba(0,0,0,.75)';ctx.shadowBlur=9;ctx.shadowOffsetY=3;
+ round(721,-7,125,87,12,grad(721,0,125,80,[[0,'#f4f4f0'],[.28,'#d7d7d2'],[.7,'#b9bab5'],[1,'#888983']]),'#514c42',3);
+ ctx.restore();
+ ctx.strokeStyle='rgba(255,255,255,.68)';ctx.lineWidth=1;
+ ctx.beginPath();ctx.moveTo(730,4);ctx.lineTo(837,4);ctx.stroke();
+ // Small stack of gold coins as decorative artwork, without a numeric balance.
+ const coin=(x,y,rx,ry)=>{
+  ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle=grad(x-rx,y-ry,2*rx,2*ry,[[0,'#fff0a0'],[.28,'#dcae3e'],[.62,'#98631c'],[.82,'#f3ce65'],[1,'#815014']]);ctx.fill();
+  ctx.strokeStyle='#8b5c18';ctx.lineWidth=1.4;ctx.stroke();
+  ctx.beginPath();ctx.ellipse(x,y-2,rx*.72,ry*.55,0,0,Math.PI*2);
+  ctx.strokeStyle='rgba(255,238,160,.75)';ctx.lineWidth=1;ctx.stroke();
+ };
+ coin(771,30,11,5);coin(783,25,12,5);coin(794,31,11,5);
+ coin(778,39,12,5);coin(791,39,12,5);coin(800,24,9,4);
+ // Gold-framed profile squares with empty dark centers for future live avatars.
+ const avatar=(x)=>{
+  ctx.save();ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=9;ctx.shadowOffsetY=3;
+  round(x,4,88,90,2,grad(x,4,88,90,[[0,'#f5d98a'],[.16,'#80521f'],[.4,'#e9c36d'],[.7,'#8b5b25'],[1,'#f2d17c']]),'#382817',2);
+  ctx.restore();
+  round(x+6,10,76,78,1,grad(x+6,10,76,78,[[0,'#252624'],[.5,'#111312'],[1,'#292a27']]),'#d0ad62',2);
+  ctx.strokeStyle='rgba(255,255,255,.16)';ctx.lineWidth=1;ctx.strokeRect(x+9,13,70,72);
+ };
+ avatar(64);avatar(1416);
+ ctx.textBaseline='alphabetic';ctx.textAlign='start';
 }
 function draw(){
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
