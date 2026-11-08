@@ -59,8 +59,9 @@ function updateSharedAim(pointerId,p){
  // This is the one authoritative vector: the guide and released shot both use it unchanged.
  const v={x:selected.x-p.x,y:selected.y-p.y};
  if(Math.hypot(v.x,v.y)>2){
-  powerPull={x:v.x,y:v.y};
+  // Keep one shared vector object for both the visible guide and the shot.
   directionVector={x:v.x,y:v.y};
+  powerPull=directionVector;
   lastAimPointerId=pointerId;
   aim={x:p.x,y:p.y};
  }
@@ -92,9 +93,9 @@ canvas.addEventListener('pointerup',e=>{
  // Never fire on the first finger-up: wait until every active finger is lifted.
  if(activePointers.size===0){
   if(selected&&powerPull){
-   // Fire using the exact vector currently represented by the single dotted guide.
-   const finalShot={x:powerPull.x,y:powerPull.y};
-   strike(selected,finalShot.x,finalShot.y);
+   // Fire from the very same vector object used to draw the dotted guide.
+   const finalShot=directionVector;
+   if(finalShot)strike(selected,finalShot.x,finalShot.y);
   }
   selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
  }
@@ -217,9 +218,9 @@ function draw(){
   }
   ctx.restore();
  }
- if(selected&&powerPull){
- const b=selected,len=Math.hypot(powerPull.x,powerPull.y),shownLength=Math.min(len,150),power=Math.min(len,150);
- const nx=len>0?powerPull.x/len:0,ny=len>0?powerPull.y/len:0;
+ if(selected&&directionVector){
+ const b=selected,len=Math.hypot(directionVector.x,directionVector.y),shownLength=Math.min(len,150),power=Math.min(len,150);
+ const nx=len>0?directionVector.x/len:0,ny=len>0?directionVector.y/len:0;
  // Draw exactly one guide. Its angle is identical to the vector passed to strike().
  ctx.save();ctx.strokeStyle='#ffd166';ctx.lineWidth=4;ctx.setLineDash([9,8]);ctx.globalAlpha=.95;
  ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+nx*shownLength,b.y+ny*shownLength);ctx.stroke();
