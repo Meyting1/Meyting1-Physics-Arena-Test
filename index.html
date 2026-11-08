@@ -55,7 +55,7 @@ const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
 let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull=null,directionVector=null,directionStart=null,usedSecondFinger=false;
 canvas.addEventListener('pointerdown',e=>{
  if(selected&&aimPointerId!==null&&e.pointerId!==aimPointerId&&directionPointerId===null){
-  directionStart=pos(e);directionVector=null;directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);
+  const p=pos(e);directionStart=p;directionVector={x:p.x-selected.x,y:p.y-selected.y};directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);
   try{canvas.setPointerCapture(e.pointerId)}catch{}
   e.preventDefault();return;
  }
@@ -72,9 +72,9 @@ canvas.addEventListener('pointermove',e=>{
   aim.x=p.x;aim.y=p.y;
   const distance=Math.hypot(selected.x-p.x,selected.y-p.y);
   if(distance<=24){aim=null;selected=null;activePointers.clear();aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;}
- }else if(e.pointerId===directionPointerId&&directionStart){
-  const dx=p.x-directionStart.x,dy=p.y-directionStart.y;
-  if(Math.hypot(dx,dy)>4)directionVector={x:dx,y:dy};
+ }else if(e.pointerId===directionPointerId){
+  // The second finger's current screen position relative to the selected piece sets shot direction.
+  directionVector={x:p.x-selected.x,y:p.y-selected.y};
  }
 });
 canvas.addEventListener('pointerup',e=>{
@@ -84,7 +84,8 @@ canvas.addEventListener('pointerup',e=>{
   if(selected)powerPull={x:selected.x-p.x,y:selected.y-p.y};
   aim=null;aimPointerId=null;
  }else if(e.pointerId===directionPointerId){
-  if(directionStart){const dx=p.x-directionStart.x,dy=p.y-directionStart.y;if(Math.hypot(dx,dy)>4)directionVector={x:dx,y:dy};}
+  // Preserve the final absolute aiming point when this finger is lifted first.
+  directionVector={x:p.x-selected.x,y:p.y-selected.y};
   directionPointerId=null;
  }
  activePointers.delete(e.pointerId);
