@@ -83,14 +83,19 @@ function beginAim(p,id){
   gestureVector={x:hit.x-p.x,y:hit.y-p.y};
   twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;directionUnit=null;
   gestureCancelled=false;aim={x:p.x,y:p.y};
- }else if(directionPointerId===null){
-  // Enter two-finger mode only now; finger 2 marks a target point.
+ }else if(directionPointerId===null&&powerPointerId!==null){
+  // Finger 2 marks an absolute target point; finger 1 remains the power control.
   twoFingerMode=true;directionPointerId=id;
-  powerStart=pointerPositions.get(powerPointerId)||powerStart;
+  powerStart=pointerPositions.get(powerPointerId)||powerStart||p;
   powerBase=Math.hypot(gestureVector.x,gestureVector.y);
   powerLength=powerBase;
   const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
-  if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
+  if(len>3)directionUnit={x:dx/len,y:dy/len};
+  else{
+   const currentLen=Math.hypot(gestureVector.x,gestureVector.y)||1;
+   directionUnit={x:gestureVector.x/currentLen,y:gestureVector.y/currentLen};
+  }
+  refreshAim();
  }
  activePointers.add(id);pointerPositions.set(id,p);
 }
@@ -108,9 +113,10 @@ function moveAim(id,p){
   }
   aim={x:p.x,y:p.y};
  }else if(id===directionPointerId){
-  // Finger 2's current position is the target point, not a swipe vector.
+  // Recalculate direction from the selected piece to finger 2's current target.
   const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
   if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
+  aim={x:p.x,y:p.y};
  }
  pointerPositions.set(id,p);
 }
