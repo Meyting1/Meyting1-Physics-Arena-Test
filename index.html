@@ -77,7 +77,7 @@ function physics(h){
    }
   if(speed>0&&b.frictionActive){
     // Normal rolling resistance after a collision with a piece or wall.
-    const drag=b.kind==='ball'?1.495:2.5;
+    const drag=b.kind==='ball'?1.71925:2.5;
     const factor=Math.exp(-drag*h);
     b.vx*=factor;b.vy*=factor;
    }
