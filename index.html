@@ -379,7 +379,7 @@ function draw(){
    // Only the original logo + white rim rotate after collisions.
    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
    ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-   if(badge.complete&&badge.naturalWidth)ctx.drawImage(badge,-b.r,-b.r,b.r*2,b.r*2);
+   if(badge.complete&&badge.naturalWidth)ctx.drawImage(badge,4,0,88,88,-b.r,-b.r,b.r*2,b.r*2);
    else{ctx.fillStyle=b.kind.endsWith('A')?'#1765a8':'#d71920';ctx.fill()}
    ctx.restore();ctx.restore();continue;
   }
