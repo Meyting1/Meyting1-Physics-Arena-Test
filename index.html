@@ -56,13 +56,14 @@ let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull
 const pointerPositions=new Map();
 function updateSharedAim(pointerId,p){
  if(!selected)return;
- // One shared vector controls both the dotted guide and the actual shot.
- // Moving either finger changes this exact vector.
+ // This is the one authoritative vector: the guide and released shot both use it unchanged.
  const v={x:selected.x-p.x,y:selected.y-p.y};
- powerPull={x:v.x,y:v.y};
- directionVector={x:v.x,y:v.y};
- lastAimPointerId=pointerId;
- aim={x:p.x,y:p.y};
+ if(Math.hypot(v.x,v.y)>2){
+  powerPull={x:v.x,y:v.y};
+  directionVector={x:v.x,y:v.y};
+  lastAimPointerId=pointerId;
+  aim={x:p.x,y:p.y};
+ }
 }
 canvas.addEventListener('pointerdown',e=>{
  const p=pos(e);
@@ -84,16 +85,16 @@ canvas.addEventListener('pointermove',e=>{
 });
 canvas.addEventListener('pointerup',e=>{
  if(!activePointers.has(e.pointerId))return;
- const p=pos(e);
- pointerPositions.set(e.pointerId,p);
- updateSharedAim(e.pointerId,p);
+ // Keep the last displayed aim vector unchanged when a finger is lifted.
  activePointers.delete(e.pointerId);pointerPositions.delete(e.pointerId);
  if(e.pointerId===aimPointerId)aimPointerId=null;
  if(e.pointerId===directionPointerId)directionPointerId=null;
  // Never fire on the first finger-up: wait until every active finger is lifted.
  if(activePointers.size===0){
   if(selected&&powerPull){
-   strike(selected,powerPull.x,powerPull.y);
+   // Fire using the exact vector currently represented by the single dotted guide.
+   const finalShot={x:powerPull.x,y:powerPull.y};
+   strike(selected,finalShot.x,finalShot.y);
   }
   selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
  }
@@ -219,11 +220,10 @@ function draw(){
  if(selected&&powerPull){
  const b=selected,len=Math.hypot(powerPull.x,powerPull.y),shownLength=Math.min(len,150),power=Math.min(len,150);
  const nx=len>0?powerPull.x/len:0,ny=len>0?powerPull.y/len:0;
- // The single dotted guide uses the exact same direction and normalized strength as strike().
- ctx.strokeStyle='#ffd166';ctx.lineWidth=4;ctx.setLineDash([9,8]);ctx.globalAlpha=.95;
+ // Draw exactly one guide. Its angle is identical to the vector passed to strike().
+ ctx.save();ctx.strokeStyle='#ffd166';ctx.lineWidth=4;ctx.setLineDash([9,8]);ctx.globalAlpha=.95;
  ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x+nx*shownLength,b.y+ny*shownLength);ctx.stroke();
- ctx.setLineDash([]);ctx.globalAlpha=1;
- ctx.fillStyle='#ffd166';ctx.globalAlpha=.12+power/190;ctx.beginPath();ctx.arc(b.x,b.y,b.r+10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
+ ctx.setLineDash([]);ctx.restore();ctx.globalAlpha=1;
  ctx.fillStyle='#fff0c2';ctx.font='bold 13px system-ui';ctx.fillText('AIM '+Math.round(power/150*100)+'%',b.x+35,b.y-34);
  }
  for(const p of particles){ctx.globalAlpha=clamp(p.life/45,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
