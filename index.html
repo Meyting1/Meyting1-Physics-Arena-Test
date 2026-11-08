@@ -374,7 +374,7 @@ function draw(){
    ctx.shadowBlur=0;
    // The thickness is a separate upright layer: it follows the disc position, never its rotation.
    if(discSidewall.complete&&discSidewall.naturalWidth){
-    ctx.drawImage(discSidewall,b.x-b.r,b.y-b.r+2,b.r*2,b.r*2+6);
+    ctx.drawImage(discSidewall,b.x-b.r,b.y-b.r+8,b.r*2,b.r*2+8);
    }
    // Only the original logo + white rim rotate after collisions.
    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
