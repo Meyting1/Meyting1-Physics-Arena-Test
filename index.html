@@ -63,7 +63,7 @@ function updateSharedAim(pointerId,p){
  // High sensitivity: a very small finger movement produces a clear aim adjustment.
  const AIM_SENSITIVITY=1;
  const v={x:base.x-(p.x-previous.x)*AIM_SENSITIVITY,y:base.y-(p.y-previous.y)*AIM_SENSITIVITY};
- if(Math.hypot(v.x,v.y)>2){
+ if(Math.hypot(v.x,v.y)>0.01){
   directionVector={x:v.x,y:v.y};
   powerPull=directionVector;
   lastAimPointerId=pointerId;
@@ -105,8 +105,17 @@ canvas.addEventListener('pointerup',e=>{
   selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
  }
 });
-canvas.addEventListener('pointercancel',()=>{
- selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;activePointers.clear();pointerPositions.clear();
+canvas.addEventListener('pointercancel',e=>{
+ // A cancelled touch must not erase the other finger's active aim.
+ activePointers.delete(e.pointerId);
+ pointerPositions.delete(e.pointerId);
+ if(e.pointerId===aimPointerId)aimPointerId=null;
+ if(e.pointerId===directionPointerId)directionPointerId=null;
+ if(activePointers.size===0){
+  selected=null;aim=null;aimPointerId=null;directionPointerId=null;
+  powerPull=null;directionVector=null;directionStart=null;
+  usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
+ }
 });
 let physicsTick=0;
 function physics(h){
