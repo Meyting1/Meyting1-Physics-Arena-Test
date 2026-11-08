@@ -89,10 +89,10 @@ function physics(h){
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const inGoal=b.kind==='ball'&&b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
   // Four actual playing-field edges, not the outer canvas/image edges.
-  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;wallBounce(b,1,0);wallFX(b.x,b.y)}
+  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;wallBounce(b,-1,0);wallFX(b.x,b.y)}
+  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;wallBounce(b,0,1);wallFX(b.x,b.y)}
+  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;wallBounce(b,0,-1);wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
@@ -102,6 +102,20 @@ function physics(h){
  const ball=bodies[2];
  if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
  else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
+}
+function wallBounce(b,nx,ny){
+ const e=b.kind==='ball'?.92:.84,tx=-ny,ty=nx;
+ const vn=b.vx*nx+b.vy*ny;
+ if(vn<0){
+  const normalImpulse=b.mass*(1+e)*(-vn);
+  b.vx-= (1+e)*vn*nx;b.vy-= (1+e)*vn*ny;
+  const inertia=.5*b.mass*b.r*b.r;
+  const contactTangent=b.vx*tx+b.vy*ty-b.spin*b.r;
+  const rawJ=-contactTangent/(1/b.mass+b.r*b.r/inertia);
+  const jt=clamp(rawJ,-.16*normalImpulse,.16*normalImpulse);
+  b.vx+=jt*tx/b.mass;b.vy+=jt*ty/b.mass;
+  b.spin-=jt*b.r/inertia;
+ }
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
@@ -154,14 +168,16 @@ function draw(){
   if(b.kind==='ball'){
    ctx.shadowBlur=0;
    if(ballTexture.complete&&ballTexture.naturalWidth){
-    ctx.save();ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.clip();
-    ctx.drawImage(ballTexture,b.x-b.r,b.y-b.r,b.r*2,b.r*2);
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
+    ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
+    ctx.drawImage(ballTexture,-b.r,-b.r,b.r*2,b.r*2);
     ctx.restore();
    }
   }else{
    const badge=b.kind.endsWith('A')?badgeA:badgeB;
-   ctx.shadowBlur=0;ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.clip();
-   if(badge.complete&&badge.naturalWidth)ctx.drawImage(badge,b.x-b.r,b.y-b.r,b.r*2,b.r*2);
+   ctx.shadowBlur=0;ctx.translate(b.x,b.y);ctx.rotate(b.angle);
+   ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
+   if(badge.complete&&badge.naturalWidth)ctx.drawImage(badge,-b.r,-b.r,b.r*2,b.r*2);
    else{ctx.fillStyle=b.kind.endsWith('A')?'#1765a8':'#d71920';ctx.fill()}
    ctx.restore();continue;
   }
