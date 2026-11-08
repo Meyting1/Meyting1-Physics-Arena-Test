@@ -89,10 +89,10 @@ function physics(h){
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const inGoal=b.kind==='ball'&&b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
   // Four actual playing-field edges, not the outer canvas/image edges.
-  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;wallBounce(b,1,0);wallFX(b.x,b.y)}
-  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;wallBounce(b,-1,0);wallFX(b.x,b.y)}
-  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;wallBounce(b,0,1);wallFX(b.x,b.y)}
-  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;wallBounce(b,0,-1);wallFX(b.x,b.y)}
+  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
@@ -103,19 +103,9 @@ function physics(h){
  if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
  else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
 }
-function wallBounce(b,nx,ny){
- const e=b.kind==='ball'?.92:.84,tx=-ny,ty=nx;
- const vn=b.vx*nx+b.vy*ny;
- if(vn<0){
-  const normalImpulse=b.mass*(1+e)*(-vn);
-  b.vx-= (1+e)*vn*nx;b.vy-= (1+e)*vn*ny;
-  const inertia=.5*b.mass*b.r*b.r;
-  const contactTangent=b.vx*tx+b.vy*ty-b.spin*b.r;
-  const rawJ=-contactTangent/(1/b.mass+b.r*b.r/inertia);
-  const jt=clamp(rawJ,-.16*normalImpulse,.16*normalImpulse);
-  b.vx+=jt*tx/b.mass;b.vy+=jt*ty/b.mass;
-  b.spin-=jt*b.r/inertia;
- }
+function wallSpin(b,tangentSpeed){
+ // Visual spin only: it never changes the body's travel speed or direction.
+ b.spin+=clamp(tangentSpeed*.018,-9,9)*(b.kind==='ball'?1.0:.7);
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
@@ -133,17 +123,13 @@ function collide(a,b){
  const j=-(1+restitution)*normalSpeed/total;
  a.vx-=j*a.inv*nx;a.vy-=j*a.inv*ny;
  b.vx+=j*b.inv*nx;b.vy+=j*b.inv*ny;
- // Coulomb friction uses contact-point velocity, including each body's rotation.
+ // Collision adds restrained visual spin without applying tangential
+ // impulses to linear velocity, preserving the existing gameplay friction.
  const tx=-ny,ty=nx,ra=a.r,rb=b.r;
- const wa=a.spin||0,wb=b.spin||0;
- const tangentSpeed=(rvx*tx+rvy*ty)-wa*ra-wb*rb;
- const ia=2/(a.mass*ra*ra),ib=2/(b.mass*rb*rb);
- const jt=-tangentSpeed/(total+ra*ra*ia+rb*rb*ib);
- const mu=ballContact?.12:.20;
- const friction=clamp(jt,-mu*j,mu*j);
- a.vx-=friction*a.inv*tx;a.vy-=friction*a.inv*ty;
- b.vx+=friction*b.inv*tx;b.vy+=friction*b.inv*ty;
- a.spin-=friction*ra*ia;b.spin-=friction*rb*ib;
+ const tangentSpeed=rvx*tx+rvy*ty;
+ const spinKick=clamp(tangentSpeed*.012,-7,7);
+ a.spin-=spinKick*(ballContact?1.0:.7);
+ b.spin+=spinKick*(ballContact?1.0:.7);
  if(j>95){playTone(clamp(105+j*.20,120,420),.035,'sine',.01);if(j>230)burst((a.x+b.x)/2,(a.y+b.y)/2,'#d8ffff',4)}
 }
 function goal(who){burst(W/2,who==='A'?18:H-18,who==='A'?'#53f5e8':'#ff4f9a',42);playTone(520,.28,'sawtooth',.04);setup();}
