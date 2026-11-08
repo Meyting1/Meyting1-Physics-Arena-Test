@@ -318,15 +318,13 @@ function drawArenaEdits(){
  ctx.fillStyle='rgba(205,180,121,.16)';ctx.fillRect(0,99,1529,1);
  // Long silver player-name plates, left and right, deliberately blank.
  path([[238,0],[617,0],[645,30],[622,68],[260,68]],grad(238,0,407,68,[[0,'#f1f1ee'],[.24,'#d8d8d4'],[.7,'#a9aaa6'],[1,'#777873']]),'#4c4b46',2);
- path([[911,30],[939,0],[1291,0],[1268,68],[907,68]],grad(907,0,384,68,[[0,'#777873'],[.3,'#a9aaa6'],[.75,'#d8d8d4'],[1,'#f1f1ee']]),'#4c4b46',2);
+ path([[1291,0],[912,0],[884,30],[907,68],[1269,68]],grad(884,0,407,68,[[0,'#777873'],[.3,'#a9aaa6'],[.75,'#d8d8d4'],[1,'#f1f1ee']]),'#4c4b46',2);
  // Fine bevel highlights on both name plates.
  ctx.strokeStyle='rgba(255,255,255,.52)';ctx.lineWidth=1;
  ctx.beginPath();ctx.moveTo(247,2);ctx.lineTo(613,2);ctx.lineTo(637,29);ctx.stroke();
- ctx.beginPath();ctx.moveTo(916,29);ctx.lineTo(941,2);ctx.lineTo(1284,2);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(1282,2);ctx.lineTo(916,2);ctx.lineTo(892,29);ctx.stroke();
  // Level labels and metallic star emblems remain; player names are not drawn.
- ctx.font='bold 17px Arial';ctx.fillStyle='#20211f';ctx.textBaseline='middle';
- ctx.textAlign='left';ctx.fillText('LV 150',510,37);
- ctx.textAlign='right';ctx.fillText('LV 117',1020,37);
+ // Level labels intentionally omitted; the silver panels remain blank.
  const star=(cx,cy,r)=>{
   ctx.beginPath();
   for(let i=0;i<10;i++){const an=-Math.PI/2+i*Math.PI/5,rad=i%2?r*.46:r,x=cx+Math.cos(an)*rad,y=cy+Math.sin(an)*rad;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
@@ -347,16 +345,7 @@ function drawArenaEdits(){
  ctx.restore();
  ctx.strokeStyle='rgba(255,255,255,.68)';ctx.lineWidth=1;
  ctx.beginPath();ctx.moveTo(730,4);ctx.lineTo(837,4);ctx.stroke();
- // Small stack of gold coins as decorative artwork, without a numeric balance.
- const coin=(x,y,rx,ry)=>{
-  ctx.beginPath();ctx.ellipse(x,y,rx,ry,0,0,Math.PI*2);
-  ctx.fillStyle=grad(x-rx,y-ry,2*rx,2*ry,[[0,'#fff0a0'],[.28,'#dcae3e'],[.62,'#98631c'],[.82,'#f3ce65'],[1,'#815014']]);ctx.fill();
-  ctx.strokeStyle='#8b5c18';ctx.lineWidth=1.4;ctx.stroke();
-  ctx.beginPath();ctx.ellipse(x,y-2,rx*.72,ry*.55,0,0,Math.PI*2);
-  ctx.strokeStyle='rgba(255,238,160,.75)';ctx.lineWidth=1;ctx.stroke();
- };
- coin(771,30,11,5);coin(783,25,12,5);coin(794,31,11,5);
- coin(778,39,12,5);coin(791,39,12,5);coin(800,24,9,4);
+ // Coin artwork and balance intentionally omitted; retain the empty silver panel.
  // Gold-framed profile squares with empty dark centers for future live avatars.
  const avatar=(x)=>{
   ctx.save();ctx.shadowColor='rgba(0,0,0,.85)';ctx.shadowBlur=9;ctx.shadowOffsetY=3;
