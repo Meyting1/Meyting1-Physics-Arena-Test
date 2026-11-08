@@ -60,7 +60,9 @@ function updateSharedAim(pointerId,p){
  if(!previous)return;
  // Each active finger contributes its movement to the same pull vector.
  const base=directionVector||{x:0,y:0};
- const v={x:base.x-(p.x-previous.x),y:base.y-(p.y-previous.y)};
+ // High sensitivity: a very small finger movement produces a clear aim adjustment.
+ const AIM_SENSITIVITY=4;
+ const v={x:base.x-(p.x-previous.x)*AIM_SENSITIVITY,y:base.y-(p.y-previous.y)*AIM_SENSITIVITY};
  if(Math.hypot(v.x,v.y)>2){
   directionVector={x:v.x,y:v.y};
   powerPull=directionVector;
