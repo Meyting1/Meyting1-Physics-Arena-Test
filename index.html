@@ -59,7 +59,7 @@ const activePointers=new Set();
 const touchPositions=new Map();
 const pointerPositions=new Map();
 let powerPointerId=null,directionPointerId=null;
-let powerStart=null,powerLength=0,powerBase=0,directionUnit=null,twoFingerMode=false;
+let powerStart=null,powerLength=0,powerBase=0,directionUnit=null,directionTarget=null,twoFingerMode=false;
 let dualPowerVector=null;
 let gestureVector=null,gestureCancelled=false;
 function screenPoint(clientX,clientY){
@@ -82,7 +82,7 @@ function beginAim(p,id){
   selected=hit;powerPointerId=id;
   // Preserve the original one-finger pull-back vector until a second finger is added.
   gestureVector={x:hit.x-p.x,y:hit.y-p.y};
-  twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;directionUnit=null;
+  twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;directionUnit=null;directionTarget=null;
   gestureCancelled=false;aim={x:p.x,y:p.y};
  }else if(activePointers.size===1&&selected){
   // Reassign whichever control finger was lifted while the other one remains down.
@@ -98,13 +98,16 @@ function beginAim(p,id){
    dualPowerVector={x:gestureVector.x,y:gestureVector.y};
    powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
    directionPointerId=id;
-   // Finger 2 marks a fresh target point; it does not set power.
-   const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
-   if(len>3)directionUnit={x:dx/len,y:dy/len};
-   else{
-    const currentLen=Math.hypot(gestureVector.x,gestureVector.y)||1;
-    directionUnit={x:gestureVector.x/currentLen,y:gestureVector.y/currentLen};
-   }
+   // On the first join, finger 2 chooses direction. On rejoin, keep the previous direction.
+   if(!directionUnit){
+    const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
+    if(len>3){directionTarget={x:dx,y:dy};directionUnit={x:dx/len,y:dy/len};}
+    else{
+     const currentLen=Math.hypot(gestureVector.x,gestureVector.y)||1;
+     directionUnit={x:gestureVector.x/currentLen,y:gestureVector.y/currentLen};
+     directionTarget={x:directionUnit.x*100,y:directionUnit.y*100};
+    }
+   }else if(!directionTarget){directionTarget={x:directionUnit.x*100,y:directionUnit.y*100};}
    refreshAim();
   }
  }
@@ -129,9 +132,13 @@ function moveAim(id,p){
   }
   aim={x:p.x,y:p.y};
  }else if(id===directionPointerId){
-  // Recalculate direction from the selected piece to finger 2's current target.
-  const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
-  if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
+  // Apply only this finger's movement delta, preserving the prior direction on rejoin.
+  const previous=pointerPositions.get(id);
+  if(previous&&directionTarget){
+   directionTarget.x+=p.x-previous.x;directionTarget.y+=p.y-previous.y;
+   const len=Math.hypot(directionTarget.x,directionTarget.y);
+   if(len>3){directionUnit={x:directionTarget.x/len,y:directionTarget.y/len};refreshAim();}
+  }
   aim={x:p.x,y:p.y};
  }
  pointerPositions.set(id,p);
@@ -145,7 +152,7 @@ function finishAim(id,cancelled=false){
  if(activePointers.size===0){
   if(!gestureCancelled&&selected&&gestureVector)strike(selected,gestureVector.x,gestureVector.y);
   selected=null;aim=null;powerPointerId=null;directionPointerId=null;
-  powerStart=null;powerLength=0;powerBase=0;directionUnit=null;twoFingerMode=false;dualPowerVector=null;
+  powerStart=null;powerLength=0;powerBase=0;directionUnit=null;directionTarget=null;twoFingerMode=false;dualPowerVector=null;
   gestureVector=null;gestureCancelled=false;pointerPositions.clear();touchPositions.clear();
  }
 }
