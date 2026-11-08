@@ -110,7 +110,7 @@ function physics(h){
  if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
  else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
 }
-function markCollision(b,key='wall'){b.frictionActive=true;if(b.kind==='ball'){const previous=b._contactsLastTick||new Set();if(!previous.has(key))b.ballCollisionCount=(b.ballCollisionCount||0)+1;b._contactsThisTick?.add(key);}}
+function markCollision(b,key='wall'){b.frictionActive=true;if(b.kind==='ball'){const previous=b._contactsLastTick||new Set(),current=b._contactsThisTick||new Set();if(!previous.has(key)&&!current.has(key))b.ballCollisionCount=(b.ballCollisionCount||0)+1;current.add(key);}}
 function wallSpin(b,tangentSpeed){
  // Visual spin only: it never changes the body's travel speed or direction.
  b.spin+=clamp(tangentSpeed*.018,-9,9)*(b.kind==='ball'?1.0:.7);
