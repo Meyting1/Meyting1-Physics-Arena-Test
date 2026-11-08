@@ -59,7 +59,7 @@ const activePointers=new Set();
 const touchPositions=new Map();
 const pointerPositions=new Map();
 let powerPointerId=null,directionPointerId=null;
-let powerStart=null,powerLength=0,powerBase=0,directionUnit=null,directionTarget=null,twoFingerMode=false;
+let powerStart=null,powerLength=0,powerBase=0,powerRadialStart=0,powerRadialBase=0,directionUnit=null,directionTarget=null,twoFingerMode=false;
 let dualPowerVector=null;
 let gestureVector=null,gestureCancelled=false;
 function screenPoint(clientX,clientY){
@@ -82,7 +82,7 @@ function beginAim(p,id){
   selected=hit;powerPointerId=id;
   // Preserve the original one-finger pull-back vector until a second finger is added.
   gestureVector={x:hit.x-p.x,y:hit.y-p.y};
-  twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;directionUnit=null;directionTarget=null;
+  twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;powerRadialStart=0;powerRadialBase=0;directionUnit=null;directionTarget=null;
   gestureCancelled=false;aim={x:p.x,y:p.y};
  }else if(activePointers.size===1&&selected){
   // Reassign whichever control finger was lifted while the other one remains down.
@@ -92,11 +92,15 @@ function beginAim(p,id){
    powerPointerId=id;
    dualPowerVector={x:gestureVector.x,y:gestureVector.y};
    powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
+   powerRadialStart=Math.hypot(p.x-selected.x,p.y-selected.y);powerRadialBase=powerLength;
    powerStart=p;
   }else if(directionPointerId===null&&powerPointerId!==null){
    // Preserve the existing pull-back magnitude when finger 2 joins.
    dualPowerVector={x:gestureVector.x,y:gestureVector.y};
    powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
+   const powerPoint=pointerPositions.get(powerPointerId);
+   powerRadialStart=powerPoint?Math.hypot(powerPoint.x-selected.x,powerPoint.y-selected.y):0;
+   powerRadialBase=powerLength;
    directionPointerId=id;
    // On the first join, finger 2 chooses direction. On rejoin, keep the previous direction.
    if(!directionUnit){
@@ -121,14 +125,12 @@ function moveAim(id,p){
    const previous=pointerPositions.get(id);
    if(previous){gestureVector.x-=(p.x-previous.x);gestureVector.y-=(p.y-previous.y);}
   }else{
-   // In two-finger mode, preserve the original pull-back math for power only.
-   const previous=pointerPositions.get(id);
-   if(previous&&dualPowerVector){
-    dualPowerVector.x-=(p.x-previous.x);
-    dualPowerVector.y-=(p.y-previous.y);
-    powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
-    refreshAim();
-   }
+   // Power is radial: moving away from the piece increases it; moving toward decreases it.
+   // The touch can begin on any side of the selected piece.
+   const radialDistance=Math.hypot(p.x-selected.x,p.y-selected.y);
+   powerLength=clamp(powerRadialBase+(radialDistance-powerRadialStart),0,150);
+   dualPowerVector={x:directionUnit?directionUnit.x*powerLength:gestureVector.x,y:directionUnit?directionUnit.y*powerLength:gestureVector.y};
+   refreshAim();
   }
   aim={x:p.x,y:p.y};
  }else if(id===directionPointerId){
@@ -152,7 +154,7 @@ function finishAim(id,cancelled=false){
  if(activePointers.size===0){
   if(!gestureCancelled&&selected&&gestureVector)strike(selected,gestureVector.x,gestureVector.y);
   selected=null;aim=null;powerPointerId=null;directionPointerId=null;
-  powerStart=null;powerLength=0;powerBase=0;directionUnit=null;directionTarget=null;twoFingerMode=false;dualPowerVector=null;
+  powerStart=null;powerLength=0;powerBase=0;powerRadialStart=0;powerRadialBase=0;directionUnit=null;directionTarget=null;twoFingerMode=false;dualPowerVector=null;
   gestureVector=null;gestureCancelled=false;pointerPositions.clear();touchPositions.clear();
  }
 }
