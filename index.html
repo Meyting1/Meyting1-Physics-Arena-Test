@@ -54,15 +54,22 @@ function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aim
 const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
 // Clean aiming controller: one finger keeps the original pull-back gesture;
 // with two fingers, movement from BOTH fingers contributes to the same aim vector.
+// Two-control aiming: finger 1 sets pull strength; finger 2 sets shot direction.
 const activePointers=new Set();
-const pointerPositions=new Map();
 const touchPositions=new Map();
-let aimPointerId=null,gestureVector=null,gestureCancelled=false;
-const AIM_SENSITIVITY=1;
+const pointerPositions=new Map();
+let powerPointerId=null,directionPointerId=null;
+let powerStart=null,powerLength=0,directionStart=null,directionUnit=null;
+let gestureVector=null,gestureCancelled=false;
 function screenPoint(clientX,clientY){
  const r=canvas.getBoundingClientRect();
  const sx=(clientX-r.left)*dpr/scale-ox/scale,sy=(clientY-r.top)*dpr/scale-oy/scale;
  return{x:sy,y:H-sx};
+}
+function refreshAim(){
+ if(!selected||!directionUnit)return;
+ const len=clamp(powerLength,0,150);
+ gestureVector={x:directionUnit.x*len,y:directionUnit.y*len};
 }
 function beginAim(p,id){
  if(activePointers.has(id)||activePointers.size>=2)return;
@@ -71,28 +78,42 @@ function beginAim(p,id){
   const hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
   if(!hit)return;
-  selected=hit;gestureVector={x:hit.x-p.x,y:hit.y-p.y};
-  gestureCancelled=false;aim={x:p.x,y:p.y};aimPointerId=id;
+  selected=hit;powerPointerId=id;powerStart=p;
+  powerLength=Math.hypot(hit.x-p.x,hit.y-p.y);
+  const dx=hit.x-p.x,dy=hit.y-p.y,dl=Math.hypot(dx,dy)||1;
+  directionUnit={x:dx/dl,y:dy/dl};
+  gestureCancelled=false;aim={x:p.x,y:p.y};refreshAim();
+ }else if(directionPointerId===null){
+  // The second finger is reserved exclusively for direction, never changes power.
+  directionPointerId=id;directionStart=p;
  }
  activePointers.add(id);pointerPositions.set(id,p);
 }
 function moveAim(id,p){
  if(!selected||!activePointers.has(id))return;
- const previous=pointerPositions.get(id);if(!previous)return;
- // Both fingers independently alter direction and power through this one vector.
- gestureVector.x-=(p.x-previous.x)*AIM_SENSITIVITY;
- gestureVector.y-=(p.y-previous.y)*AIM_SENSITIVITY;
- pointerPositions.set(id,p);aim={x:p.x,y:p.y};
+ if(id===powerPointerId){
+  // Pulling the first finger farther back increases only shot power.
+  powerLength=Math.hypot(p.x-powerStart.x,p.y-powerStart.y);
+  aim={x:p.x,y:p.y};
+  refreshAim();
+ }else if(id===directionPointerId){
+  // The second finger's swipe sets only the direction angle.
+  const dx=p.x-directionStart.x,dy=p.y-directionStart.y,len=Math.hypot(dx,dy);
+  if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
+ }
+ pointerPositions.set(id,p);
 }
 function finishAim(id,cancelled=false){
  if(!activePointers.has(id))return;
  if(cancelled)gestureCancelled=true;
  activePointers.delete(id);pointerPositions.delete(id);
- if(id===aimPointerId)aimPointerId=null;
+ if(id===powerPointerId)powerPointerId=null;
+ if(id===directionPointerId)directionPointerId=null;
  if(activePointers.size===0){
   if(!gestureCancelled&&selected&&gestureVector)strike(selected,gestureVector.x,gestureVector.y);
-  selected=null;aim=null;aimPointerId=null;gestureVector=null;
-  gestureCancelled=false;pointerPositions.clear();touchPositions.clear();
+  selected=null;aim=null;powerPointerId=null;directionPointerId=null;
+  powerStart=null;powerLength=0;directionStart=null;directionUnit=null;
+  gestureVector=null;gestureCancelled=false;pointerPositions.clear();touchPositions.clear();
  }
 }
 canvas.addEventListener('touchstart',e=>{
@@ -114,7 +135,7 @@ canvas.addEventListener('touchend',e=>{
 canvas.addEventListener('touchcancel',e=>{
  for(const t of e.changedTouches){const id=touchPositions.get(t.identifier);if(id){finishAim(id,true);touchPositions.delete(t.identifier);}}
 },{passive:false});
-// Mouse and pen fallback. Touch is handled only by native touch events.
+// Mouse/pen fallback; touch input is handled only by native touch events.
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
  beginAim(pos(e),e.pointerId);
