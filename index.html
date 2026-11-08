@@ -52,57 +52,56 @@ function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*
 function showToast(){}
 function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aimPct=clamp(len/150,0,1);const aimPower=Math.pow(aimPct,b.kind==='ball'?1.8:4.0);const power=1100*aimPower*(b.kind==='ball'?1.25:1)*1.10*1.5;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;b.lowAimDrag=b.kind==='ball'?0:10*Math.pow(1-aimPct,2);b.frictionActive=false;b.ballCollisionCount=0;b.lastBallCollisionTick=-1;if(b.kind!=='ball'){const ball=bodies.find(body=>body.kind==='ball');if(ball){ball.frictionActive=false;ball.ballCollisionCount=0;ball._contactsLastTick=new Set();ball._contactsThisTick=new Set();}}turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
-let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull=null,directionVector=null,directionStart=null,usedSecondFinger=false;
+let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull=null,directionVector=null,directionStart=null,usedSecondFinger=false,lastAimPointerId=null;
+const pointerPositions=new Map();
+function updateSharedAim(pointerId,p){
+ if(!selected)return;
+ // Either finger can now set BOTH shot strength and direction.
+ // Pulling away from the selected piece determines the shot vector.
+ const v={x:selected.x-p.x,y:selected.y-p.y};
+ if(Math.hypot(v.x,v.y)>4){
+  powerPull={x:v.x,y:v.y};
+  directionVector={x:v.x,y:v.y};
+  lastAimPointerId=pointerId;
+  aim={x:p.x,y:p.y};
+ }
+}
 canvas.addEventListener('pointerdown',e=>{
+ const p=pos(e);
  if(selected&&aimPointerId!==null&&e.pointerId!==aimPointerId&&directionPointerId===null){
-  const p=pos(e);directionStart=p;directionVector={x:p.x-selected.x,y:p.y-selected.y};directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);
+  directionStart=p;directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);pointerPositions.set(e.pointerId,p);
   try{canvas.setPointerCapture(e.pointerId)}catch{}
+  updateSharedAim(e.pointerId,p);
   e.preventDefault();return;
  }
  if(aimPointerId!==null||moving()||turn!=='A')return;
- const p=pos(e);
  let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;activePointers=new Set([e.pointerId]);canvas.setPointerCapture(e.pointerId)}
+ if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pointerPositions.clear();pointerPositions.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId)}
 });
 canvas.addEventListener('pointermove',e=>{
- if(!selected)return;
- const p=pos(e);
- if(e.pointerId===aimPointerId&&aim){
-  aim.x=p.x;aim.y=p.y;
-  const distance=Math.hypot(selected.x-p.x,selected.y-p.y);
-  if(distance<=24){aim=null;selected=null;activePointers.clear();aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;}
- }else if(e.pointerId===directionPointerId){
-  // The second finger's current screen position relative to the selected piece sets shot direction.
-  directionVector={x:p.x-selected.x,y:p.y-selected.y};
- }
+ if(!selected||!activePointers.has(e.pointerId))return;
+ const p=pos(e);pointerPositions.set(e.pointerId,p);
+ updateSharedAim(e.pointerId,p);
 });
 canvas.addEventListener('pointerup',e=>{
  if(!activePointers.has(e.pointerId))return;
  const p=pos(e);
- if(e.pointerId===aimPointerId){
-  if(selected)powerPull={x:selected.x-p.x,y:selected.y-p.y};
-  aim=null;aimPointerId=null;
- }else if(e.pointerId===directionPointerId){
-  // Preserve the final absolute aiming point when this finger is lifted first.
-  directionVector={x:p.x-selected.x,y:p.y-selected.y};
-  directionPointerId=null;
- }
- activePointers.delete(e.pointerId);
+ pointerPositions.set(e.pointerId,p);
+ updateSharedAim(e.pointerId,p);
+ activePointers.delete(e.pointerId);pointerPositions.delete(e.pointerId);
+ if(e.pointerId===aimPointerId)aimPointerId=null;
+ if(e.pointerId===directionPointerId)directionPointerId=null;
+ // Never fire on the first finger-up: wait until every active finger is lifted.
  if(activePointers.size===0){
   if(selected&&powerPull){
-   let shot=powerPull;
-   if(usedSecondFinger&&directionVector&&Math.hypot(directionVector.x,directionVector.y)>4){
-    const powerLength=Math.hypot(powerPull.x,powerPull.y),angleLength=Math.hypot(directionVector.x,directionVector.y);
-    shot={x:directionVector.x/angleLength*powerLength,y:directionVector.y/angleLength*powerLength};
-   }
-   strike(selected,shot.x,shot.y);
+   strike(selected,powerPull.x,powerPull.y);
   }
-  selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;
+  selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
  }
 });
 canvas.addEventListener('pointercancel',()=>{
- selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;activePointers.clear();
+ selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;activePointers.clear();pointerPositions.clear();
 });
 let physicsTick=0;
 function physics(h){
