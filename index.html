@@ -59,7 +59,7 @@ const activePointers=new Set();
 const touchPositions=new Map();
 const pointerPositions=new Map();
 let powerPointerId=null,directionPointerId=null;
-let powerStart=null,powerLength=0,directionStart=null,directionUnit=null;
+let powerStart=null,powerLength=0,powerBase=0,directionUnit=null,twoFingerMode=false;
 let gestureVector=null,gestureCancelled=false;
 function screenPoint(clientX,clientY){
  const r=canvas.getBoundingClientRect();
@@ -78,14 +78,17 @@ function beginAim(p,id){
   const hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
   if(!hit)return;
-  selected=hit;powerPointerId=id;powerStart=p;
-  powerLength=Math.hypot(hit.x-p.x,hit.y-p.y);
-  const dx=hit.x-p.x,dy=hit.y-p.y,dl=Math.hypot(dx,dy)||1;
-  directionUnit={x:dx/dl,y:dy/dl};
-  gestureCancelled=false;aim={x:p.x,y:p.y};refreshAim();
+  selected=hit;powerPointerId=id;
+  // Preserve the original one-finger pull-back vector until a second finger is added.
+  gestureVector={x:hit.x-p.x,y:hit.y-p.y};
+  twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;directionUnit=null;
+  gestureCancelled=false;aim={x:p.x,y:p.y};
  }else if(directionPointerId===null){
-  // The second finger selects a target point; direction runs from the selected piece to that point.
-  directionPointerId=id;directionStart=p;
+  // Enter two-finger mode only now; finger 2 marks a target point.
+  twoFingerMode=true;directionPointerId=id;
+  powerStart=pointerPositions.get(powerPointerId)||powerStart;
+  powerBase=Math.hypot(gestureVector.x,gestureVector.y);
+  powerLength=powerBase;
   const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
   if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
  }
@@ -94,12 +97,18 @@ function beginAim(p,id){
 function moveAim(id,p){
  if(!selected||!activePointers.has(id))return;
  if(id===powerPointerId){
-  // Pulling the first finger farther back increases only shot power.
-  powerLength=Math.hypot(p.x-powerStart.x,p.y-powerStart.y);
+  if(!twoFingerMode){
+   // Exact original single-finger behavior: update the aim vector by this finger's movement.
+   const previous=pointerPositions.get(id);
+   if(previous){gestureVector.x-=(p.x-previous.x);gestureVector.y-=(p.y-previous.y);}
+  }else{
+   // In two-finger mode, finger 1 changes only power.
+   powerLength=powerBase+Math.hypot(p.x-powerStart.x,p.y-powerStart.y);
+   refreshAim();
+  }
   aim={x:p.x,y:p.y};
-  refreshAim();
  }else if(id===directionPointerId){
-  // The second finger's current position is the target point, not a swipe vector.
+  // Finger 2's current position is the target point, not a swipe vector.
   const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
   if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
  }
@@ -114,7 +123,7 @@ function finishAim(id,cancelled=false){
  if(activePointers.size===0){
   if(!gestureCancelled&&selected&&gestureVector)strike(selected,gestureVector.x,gestureVector.y);
   selected=null;aim=null;powerPointerId=null;directionPointerId=null;
-  powerStart=null;powerLength=0;directionStart=null;directionUnit=null;
+  powerStart=null;powerLength=0;powerBase=0;directionUnit=null;twoFingerMode=false;
   gestureVector=null;gestureCancelled=false;pointerPositions.clear();touchPositions.clear();
  }
 }
