@@ -19,10 +19,9 @@ canvas{display:block;width:100%;height:100%;max-width:none;border:0;border-radiu
 'use strict';
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
-// The supplied image is cropped to the exact gold rectangular playing field.
-const SOURCE_FIELD={left:330,top:113,right:1240,bottom:677};
-const W=SOURCE_FIELD.right-SOURCE_FIELD.left,H=SOURCE_FIELD.bottom-SOURCE_FIELD.top,wall=24,goalW=170,goalDepth=26;
-const FIELD={left:0,right:W,top:0,bottom:H,goalTop:263-SOURCE_FIELD.top,goalBottom:500-SOURCE_FIELD.top};
+const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
+// Keep the complete supplied arena image, including the player-name and score panels.
+const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
 let dpr=1,scale=1,ox=0,oy=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
 const badgeA=new Image(),badgeB=new Image();
@@ -146,7 +145,7 @@ function ai(){
 function draw(){
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
  ctx.fillStyle='#061523';ctx.fillRect(ox,oy,H*scale,W*scale);ctx.save();ctx.translate(ox+H*scale,oy);ctx.rotate(Math.PI/2);ctx.scale(scale,scale);
- if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,SOURCE_FIELD.left,SOURCE_FIELD.top,W,H,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
+ if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  for(const b of bodies){
   if(b===selected){ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.shadowColor=b.color;ctx.shadowBlur=18;ctx.beginPath();ctx.arc(b.x,b.y,b.r+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
