@@ -52,20 +52,41 @@ function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*
 function showToast(){}
 function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aimPct=clamp(len/150,0,1);const aimPower=Math.pow(aimPct,b.kind==='ball'?1.8:4.0);const power=1100*aimPower*(b.kind==='ball'?1.25:1)*1.10*1.5;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;b.lowAimDrag=b.kind==='ball'?0:10*Math.pow(1-aimPct,2);b.frictionActive=false;b.ballCollisionCount=0;b.lastBallCollisionTick=-1;if(b.kind!=='ball'){const ball=bodies.find(body=>body.kind==='ball');if(ball){ball.frictionActive=false;ball.ballCollisionCount=0;ball._contactsLastTick=new Set();ball._contactsThisTick=new Set();}}turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
+let activePointers=new Set(),aimPointerId=null,pendingShot=null;
 canvas.addEventListener('pointerdown',e=>{
+ if(aim&&selected){
+  activePointers.add(e.pointerId);
+  try{canvas.setPointerCapture(e.pointerId)}catch{}
+  e.preventDefault();
+  return;
+ }
  if(moving()||turn!=='A')return;
  const p=pos(e);
  let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};canvas.setPointerCapture(e.pointerId)}
+ if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pendingShot=null;canvas.setPointerCapture(e.pointerId)}
 });
-canvas.addEventListener('pointermove',e=>{if(aim&&selected){const p=pos(e);aim.x=p.x;aim.y=p.y;const distance=Math.hypot(selected.x-p.x,selected.y-p.y);if(distance<=24){aim=null;selected=null;if(canvas.hasPointerCapture(e.pointerId))canvas.releasePointerCapture(e.pointerId);}}});
+canvas.addEventListener('pointermove',e=>{
+ if(aim&&selected&&e.pointerId===aimPointerId){const p=pos(e);aim.x=p.x;aim.y=p.y;const distance=Math.hypot(selected.x-p.x,selected.y-p.y);if(distance<=24){aim=null;selected=null;pendingShot=null;activePointers.clear();aimPointerId=null;}}
+});
 canvas.addEventListener('pointerup',e=>{
- if(!aim||!selected)return;
- const p=pos(e),b=selected,dx=b.x-p.x,dy=b.y-p.y;
- strike(b,dx,dy);aim=null;selected=null;
+ if(!activePointers.has(e.pointerId))return;
+ activePointers.delete(e.pointerId);
+ if(e.pointerId===aimPointerId&&aim&&selected){
+  const p=pos(e),b=selected;
+  pendingShot={b,dx:b.x-p.x,dy:b.y-p.y};
+  aim=null;
+ }
+ if(activePointers.size===0){
+  if(pendingShot){strike(pendingShot.b,pendingShot.dx,pendingShot.dy)}
+  selected=null;aim=null;pendingShot=null;aimPointerId=null;
+ }
 });
-canvas.addEventListener('pointercancel',()=>{aim=null;selected=null});
+canvas.addEventListener('pointercancel',e=>{
+ activePointers.delete(e.pointerId);
+ if(e.pointerId===aimPointerId){aim=null;selected=null;pendingShot=null;aimPointerId=null;activePointers.clear();return;}
+ if(activePointers.size===0){selected=null;aim=null;pendingShot=null;aimPointerId=null;}
+});
 let physicsTick=0;
 function physics(h){
   physicsTick++;
