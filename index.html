@@ -80,7 +80,7 @@ function physics(h){
    }
   if(speed>0&&b.frictionActive){
     // Normal rolling resistance after a collision with a piece or wall.
-    const drag=b.kind==='ball'?1.71925*Math.pow(1.1,Math.max(0,(b.ballCollisionCount||1)-1)):2.5;
+    const drag=b.kind==='ball'?1.71925:2.5;
     const factor=Math.exp(-drag*h);
     b.vx*=factor;b.vy*=factor;
    }
@@ -110,7 +110,7 @@ function physics(h){
  if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
  else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
 }
-function markCollision(b,key='wall'){b.frictionActive=true;if(b.kind==='ball'){const previous=b._contactsLastTick||new Set(),current=b._contactsThisTick||new Set();if(!previous.has(key)&&!current.has(key))b.ballCollisionCount=(b.ballCollisionCount||0)+1;current.add(key);}}
+function markCollision(b,key='wall'){b.frictionActive=true;if(b.kind==='ball'){const current=b._contactsThisTick||new Set();current.add(key);}}
 function wallSpin(b,tangentSpeed){
  // Visual spin only: it never changes the body's travel speed or direction.
  b.spin+=clamp(tangentSpeed*.018,-9,9)*(b.kind==='ball'?1.0:.7);
