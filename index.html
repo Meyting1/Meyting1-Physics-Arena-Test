@@ -39,6 +39,8 @@ button:active{transform:scale(.97)}.hint{line-height:1.45;max-width:65%}
 const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
+// Playable grass is inset inside the gold frame of the supplied arena image.
+const FIELD={left:327,right:1242,top:111,bottom:677,goalTop:263,goalBottom:500};
 let dpr=1,scale=1,ox=0,oy=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
 const badgeA=new Image(),badgeB=new Image();
@@ -104,11 +106,12 @@ function physics(h){
   b.angle+=(Math.hypot(b.vx,b.vy)/b.r+b.spin)*h;
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
-  const inGoal=b.kind==='ball'&&b.y>H/2-goalW/2+b.r*.25&&b.y<H/2+goalW/2-b.r*.25;
-  if(b.x-b.r<wall&&!inGoal){b.x=wall+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.x+b.r>W-wall&&!inGoal){b.x=W-wall-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.y-b.r<wall){b.y=wall+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
-  if(b.y+b.r>H-wall){b.y=H-wall-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  const inGoal=b.kind==='ball'&&b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
+  // Four actual playing-field edges, not the outer canvas/image edges.
+  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
+  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
@@ -116,8 +119,8 @@ function physics(h){
  const ballSpeed=Math.hypot(bodies[2].vx,bodies[2].vy);
  if(ballSpeed>1400){bodies[2].vx*=1400/ballSpeed;bodies[2].vy*=1400/ballSpeed}
  const ball=bodies[2];
- if(ball.x>W+ball.r*.5){scoreA++;goal('A')}
- else if(ball.x<-ball.r*.5){scoreB++;goal('B')}
+ if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
+ else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
