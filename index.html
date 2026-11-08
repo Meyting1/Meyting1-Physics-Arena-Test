@@ -40,7 +40,7 @@ const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 // Playable grass is inset inside the gold frame of the supplied arena image.
-const FIELD={left:327,right:1242,top:111,bottom:677,goalTop:263,goalBottom:500};
+const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
 let dpr=1,scale=1,ox=0,oy=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
 const badgeA=new Image(),badgeB=new Image();
