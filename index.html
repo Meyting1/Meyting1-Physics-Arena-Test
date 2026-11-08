@@ -84,8 +84,10 @@ function beginAim(p,id){
   directionUnit={x:dx/dl,y:dy/dl};
   gestureCancelled=false;aim={x:p.x,y:p.y};refreshAim();
  }else if(directionPointerId===null){
-  // The second finger is reserved exclusively for direction, never changes power.
+  // The second finger selects a target point; direction runs from the selected piece to that point.
   directionPointerId=id;directionStart=p;
+  const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
+  if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
  }
  activePointers.add(id);pointerPositions.set(id,p);
 }
@@ -97,8 +99,8 @@ function moveAim(id,p){
   aim={x:p.x,y:p.y};
   refreshAim();
  }else if(id===directionPointerId){
-  // The second finger's swipe sets only the direction angle.
-  const dx=p.x-directionStart.x,dy=p.y-directionStart.y,len=Math.hypot(dx,dy);
+  // The second finger's current position is the target point, not a swipe vector.
+  const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
   if(len>3){directionUnit={x:dx/len,y:dy/len};refreshAim();}
  }
  pointerPositions.set(id,p);
