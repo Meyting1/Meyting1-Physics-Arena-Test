@@ -22,7 +22,7 @@ const $=id=>document.getElementById(id);
 const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 // Keep the complete supplied arena image, including the player-name and score panels.
 const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
-let dpr=1,scale=1,ox=0,oy=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
+let dpr=1,scaleX=1,scaleY=1,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
 const badgeA=new Image(),badgeB=new Image();
 const ballTexture=new Image();ballTexture.src='ball_exact.jpg';
@@ -42,9 +42,10 @@ function setup(){
 function resize(){
  const rect=canvas.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);
  canvas.width=Math.max(1,Math.round(rect.width*dpr));canvas.height=Math.max(1,Math.round(rect.height*dpr));
- scale=Math.min(canvas.width/H,canvas.height/W);ox=(canvas.width-H*scale)/2;oy=(canvas.height-W*scale)/2;
+ // Stretch the complete arena artwork to the full screen without bars or cropping.
+ scaleX=canvas.height/W;scaleY=canvas.width/H;
 }
-function pos(e){const r=canvas.getBoundingClientRect();const sx=(e.clientX-r.left)*dpr/scale-ox/scale,sy=(e.clientY-r.top)*dpr/scale-oy/scale;return{x:sy,y:H-sx}}
+function pos(e){const r=canvas.getBoundingClientRect();const sx=(e.clientX-r.left)*dpr,sy=(e.clientY-r.top)*dpr;return{x:sy/scaleX,y:H-sx/scaleY}}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function updateTurn(){}
 function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.8)}
@@ -66,8 +67,8 @@ let pinchStartDistance=0,pinchStartAngle=0,pinchBasePower=0,pinchBaseDirection=0
 let gestureVector=null,gestureCancelled=false;
 function screenPoint(clientX,clientY){
  const r=canvas.getBoundingClientRect();
- const sx=(clientX-r.left)*dpr/scale-ox/scale,sy=(clientY-r.top)*dpr/scale-oy/scale;
- return{x:sy,y:H-sx};
+ const sx=(clientX-r.left)*dpr,sy=(clientY-r.top)*dpr;
+ return{x:sy/scaleX,y:H-sx/scaleY};
 }
 function refreshAim(){
  if(!selected||!directionUnit)return;
@@ -351,7 +352,7 @@ function drawArenaEdits(){
 }
 function draw(){
  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
- ctx.fillStyle='#061523';ctx.fillRect(ox,oy,H*scale,W*scale);ctx.save();ctx.translate(ox+H*scale,oy);ctx.rotate(Math.PI/2);ctx.scale(scale,scale);
+ ctx.fillStyle='#061523';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.save();ctx.translate(canvas.width,0);ctx.rotate(Math.PI/2);ctx.scale(scaleX,scaleY);
  if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
  drawArenaEdits();
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
