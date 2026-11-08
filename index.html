@@ -77,21 +77,24 @@ canvas.addEventListener('pointerdown',e=>{
   // The second finger starts contributing from its own touch point; it does not replace the current aim.
   e.preventDefault();return;
  }
+ if(selected&&activePointers.size>0){e.preventDefault();return;}
  if(aimPointerId!==null||moving()||turn!=='A')return;
  let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;directionVector={x:hit.x-p.x,y:hit.y-p.y};powerPull=directionVector;directionStart=null;usedSecondFinger=false;lastAimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pointerPositions.clear();pointerPositions.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId)}
+ if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;directionVector={x:hit.x-p.x,y:hit.y-p.y};powerPull=directionVector;directionStart=null;usedSecondFinger=false;lastAimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pointerPositions.clear();pointerPositions.set(e.pointerId,p);try{canvas.setPointerCapture(e.pointerId)}catch{};e.preventDefault()}
 });
-canvas.addEventListener('pointermove',e=>{
+window.addEventListener('pointermove',e=>{
  if(!selected||!activePointers.has(e.pointerId))return;
+ e.preventDefault();
  const p=pos(e);
  const previous=pointerPositions.get(e.pointerId);
  if(!previous)return;
  updateSharedAim(e.pointerId,p);
  pointerPositions.set(e.pointerId,p);
-});
-canvas.addEventListener('pointerup',e=>{
+},{capture:true,passive:false});
+window.addEventListener('pointerup',e=>{
  if(!activePointers.has(e.pointerId))return;
+ e.preventDefault();
  // Keep the last displayed aim vector unchanged when a finger is lifted.
  activePointers.delete(e.pointerId);pointerPositions.delete(e.pointerId);
  if(e.pointerId===aimPointerId)aimPointerId=null;
@@ -105,9 +108,10 @@ canvas.addEventListener('pointerup',e=>{
   }
   selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
  }
-});
-canvas.addEventListener('pointercancel',e=>{
- // A cancelled touch must not erase the other finger's active aim.
+},{capture:true,passive:false});
+window.addEventListener('pointercancel',e=>{
+ if(!activePointers.has(e.pointerId))return;
+ // Cancel only the pointer that was interrupted; preserve the other finger's aim.
  activePointers.delete(e.pointerId);
  pointerPositions.delete(e.pointerId);
  if(e.pointerId===aimPointerId)aimPointerId=null;
@@ -117,7 +121,7 @@ canvas.addEventListener('pointercancel',e=>{
   powerPull=null;directionVector=null;directionStart=null;
   usedSecondFinger=false;lastAimPointerId=null;pointerPositions.clear();
  }
-});
+},{capture:true,passive:false});
 let physicsTick=0;
 function physics(h){
   physicsTick++;
