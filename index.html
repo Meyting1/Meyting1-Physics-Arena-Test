@@ -55,7 +55,7 @@ const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
 canvas.addEventListener('pointerdown',e=>{
  if(moving()||turn!=='A')return;
  const p=pos(e);
- let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<b.r+18)
+ let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
  if(hit){selected=hit;aim={x:p.x,y:p.y};canvas.setPointerCapture(e.pointerId)}
 });
