@@ -162,7 +162,13 @@ function finishAim(id,cancelled=false){
  activePointers.delete(id);pointerPositions.delete(id);
  if(id===powerPointerId)powerPointerId=null;
  if(id===directionPointerId)directionPointerId=null;
- if(activePointers.size===0){
+ if(activePointers.size===1&&selected){
+  // Fall back to one-finger aiming without ending the current shot.
+  const remainingId=activePointers.values().next().value;
+  const remainingPoint=pointerPositions.get(remainingId);
+  powerPointerId=remainingId;directionPointerId=null;twoFingerMode=false;
+  if(remainingPoint)aim={x:remainingPoint.x,y:remainingPoint.y};
+ }else if(activePointers.size===0){
   if(!gestureCancelled&&selected&&gestureVector)strike(selected,gestureVector.x,gestureVector.y);
   selected=null;aim=null;powerPointerId=null;directionPointerId=null;
   powerStart=null;powerLength=0;powerBase=0;powerRadialStart=0;powerRadialBase=0;directionUnit=null;directionTarget=null;twoFingerMode=false;dualPowerVector=null;
