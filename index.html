@@ -52,18 +52,18 @@ function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*
 function showToast(){}
 function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aimPct=clamp(len/150,0,1);const aimPower=Math.pow(aimPct,b.kind==='ball'?1.8:4.0);const power=1100*aimPower*(b.kind==='ball'?1.25:1)*1.10*1.5;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;b.lowAimDrag=b.kind==='ball'?0:10*Math.pow(1-aimPct,2);b.frictionActive=false;b.ballCollisionCount=0;b.lastBallCollisionTick=-1;if(b.kind!=='ball'){const ball=bodies.find(body=>body.kind==='ball');if(ball){ball.frictionActive=false;ball.ballCollisionCount=0;ball._contactsLastTick=new Set();ball._contactsThisTick=new Set();}}turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
-let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull=null,directionVector=null,usedSecondFinger=false;
+let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull=null,directionVector=null,directionStart=null,usedSecondFinger=false;
 canvas.addEventListener('pointerdown',e=>{
  if(selected&&aimPointerId!==null&&e.pointerId!==aimPointerId&&directionPointerId===null){
-  const p=pos(e),dx=p.x-selected.x,dy=p.y-selected.y;
-  if(Math.hypot(dx,dy)>1){directionVector={x:dx,y:dy};directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);try{canvas.setPointerCapture(e.pointerId)}catch{}e.preventDefault();}
-  return;
+  directionStart=pos(e);directionVector=null;directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);
+  try{canvas.setPointerCapture(e.pointerId)}catch{}
+  e.preventDefault();return;
  }
  if(aimPointerId!==null||moving()||turn!=='A')return;
  const p=pos(e);
  let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;powerPull=null;directionVector=null;usedSecondFinger=false;activePointers=new Set([e.pointerId]);canvas.setPointerCapture(e.pointerId)}
+ if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;activePointers=new Set([e.pointerId]);canvas.setPointerCapture(e.pointerId)}
 });
 canvas.addEventListener('pointermove',e=>{
  if(!selected)return;
@@ -71,10 +71,10 @@ canvas.addEventListener('pointermove',e=>{
  if(e.pointerId===aimPointerId&&aim){
   aim.x=p.x;aim.y=p.y;
   const distance=Math.hypot(selected.x-p.x,selected.y-p.y);
-  if(distance<=24){aim=null;selected=null;activePointers.clear();aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;usedSecondFinger=false;}
- }else if(e.pointerId===directionPointerId){
-  const dx=p.x-selected.x,dy=p.y-selected.y;
-  if(Math.hypot(dx,dy)>1)directionVector={x:dx,y:dy};
+  if(distance<=24){aim=null;selected=null;activePointers.clear();aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;}
+ }else if(e.pointerId===directionPointerId&&directionStart){
+  const dx=p.x-directionStart.x,dy=p.y-directionStart.y;
+  if(Math.hypot(dx,dy)>4)directionVector={x:dx,y:dy};
  }
 });
 canvas.addEventListener('pointerup',e=>{
@@ -84,26 +84,24 @@ canvas.addEventListener('pointerup',e=>{
   if(selected)powerPull={x:selected.x-p.x,y:selected.y-p.y};
   aim=null;aimPointerId=null;
  }else if(e.pointerId===directionPointerId){
-  if(selected){const dx=p.x-selected.x,dy=p.y-selected.y;if(Math.hypot(dx,dy)>1)directionVector={x:dx,y:dy};}
+  if(directionStart){const dx=p.x-directionStart.x,dy=p.y-directionStart.y;if(Math.hypot(dx,dy)>4)directionVector={x:dx,y:dy};}
   directionPointerId=null;
  }
  activePointers.delete(e.pointerId);
  if(activePointers.size===0){
   if(selected&&powerPull){
    let shot=powerPull;
-   if(usedSecondFinger&&directionVector&&Math.hypot(directionVector.x,directionVector.y)>1){
+   if(usedSecondFinger&&directionVector&&Math.hypot(directionVector.x,directionVector.y)>4){
     const powerLength=Math.hypot(powerPull.x,powerPull.y),angleLength=Math.hypot(directionVector.x,directionVector.y);
     shot={x:directionVector.x/angleLength*powerLength,y:directionVector.y/angleLength*powerLength};
    }
    strike(selected,shot.x,shot.y);
   }
-  selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;usedSecondFinger=false;
+  selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;
  }
 });
-canvas.addEventListener('pointercancel',e=>{
- activePointers.delete(e.pointerId);
- // A cancelled touch cancels the whole aiming gesture rather than firing unexpectedly.
- selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;usedSecondFinger=false;activePointers.clear();
+canvas.addEventListener('pointercancel',()=>{
+ selected=null;aim=null;aimPointerId=null;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;activePointers.clear();
 });
 let physicsTick=0;
 function physics(h){
@@ -225,6 +223,7 @@ function draw(){
  ctx.fillStyle='#53f5e8';ctx.globalAlpha=.12+power/190;ctx.beginPath();ctx.arc(b.x,b.y,b.r+10,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
  ctx.fillStyle='#b7fff9';ctx.font='bold 13px system-ui';ctx.fillText('POWER '+Math.round(power/150*100)+'%',b.x+35,b.y-34);
  }
+ if(selected&&usedSecondFinger&&directionVector){const dl=Math.hypot(directionVector.x,directionVector.y);if(dl>4){ctx.strokeStyle='#ffd166';ctx.lineWidth=5;ctx.setLineDash([8,6]);ctx.beginPath();ctx.moveTo(selected.x,selected.y);ctx.lineTo(selected.x+directionVector.x/dl*95,selected.y+directionVector.y/dl*95);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='#ffd166';ctx.font='bold 13px system-ui';ctx.fillText('DIRECTION',selected.x+directionVector.x/dl*100,selected.y+directionVector.y/dl*100);}}
  for(const p of particles){ctx.globalAlpha=clamp(p.life/45,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  ctx.restore();
  particles=particles.filter(p=>p.life-->0);for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vx*=.96;p.vy*=.96}
