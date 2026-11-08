@@ -50,7 +50,7 @@ function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.8)}
 function playTone(freq=260,dur=.06,type='sine',vol=.035){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.stop(audio.currentTime+dur)}catch{}}
 function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:35+Math.random()*20,color,r:1+Math.random()*3})}}
 function showToast(){}
-function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aimPct=clamp(len/150,0,1);const aimPower=Math.pow(aimPct,b.kind==='ball'?1.8:4.0);const power=1100*aimPower*(b.kind==='ball'?1.25:1)*1.10*1.5;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;b.lowAimDrag=b.kind==='ball'?0:10*Math.pow(1-aimPct,2);b.frictionActive=false;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
+function strike(b,dx,dy){const len=Math.hypot(dx,dy);if(len<2.5)return;const aimPct=clamp(len/150,0,1);const aimPower=Math.pow(aimPct,b.kind==='ball'?1.8:4.0);const power=1100*aimPower*(b.kind==='ball'?1.25:1)*1.10*1.5;b.vx=dx/len*power;b.vy=dy/len*power;b.spin=0;b.lowAimDrag=b.kind==='ball'?0:10*Math.pow(1-aimPct,2);b.frictionActive=false;b.ballCollisionCount=0;b.lastBallCollisionTick=-1;turn=turn==='A'?'B':'A';shots++;updateTurn();playTone(180,.09,'triangle',.05);burst(b.x,b.y,b.color,7)}
 const teamA=[0,3,5,7,9],teamB=[1,4,6,8,10];
 canvas.addEventListener('pointerdown',e=>{
  if(moving()||turn!=='A')return;
@@ -66,7 +66,9 @@ canvas.addEventListener('pointerup',e=>{
  strike(b,dx,dy);aim=null;selected=null;
 });
 canvas.addEventListener('pointercancel',()=>{aim=null;selected=null});
+let physicsTick=0;
 function physics(h){
+  physicsTick++;
  // h is a fixed 1/120-second step. Velocities are pixels per second.
  for(const b of bodies){
   const speed=Math.hypot(b.vx,b.vy);
@@ -77,7 +79,7 @@ function physics(h){
    }
   if(speed>0&&b.frictionActive){
     // Normal rolling resistance after a collision with a piece or wall.
-    const drag=b.kind==='ball'?1.71925:2.5;
+    const drag=b.kind==='ball'?1.71925*Math.pow(1.1,Math.max(0,(b.ballCollisionCount||1)-1)):2.5;
     const factor=Math.exp(-drag*h);
     b.vx*=factor;b.vy*=factor;
    }
@@ -92,10 +94,10 @@ function physics(h){
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const inGoal=b.kind==='ball'&&b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
   // Four actual playing-field edges, not the outer canvas/image edges.
-  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;b.frictionActive=true;b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;b.frictionActive=true;b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;b.frictionActive=true;b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
-  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;b.frictionActive=true;b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.x-b.r<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r;markCollision(b);b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.x+b.r>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r;markCollision(b);b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.y-b.r<FIELD.top){b.y=FIELD.top+b.r;markCollision(b);b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.y+b.r>FIELD.bottom){b.y=FIELD.bottom-b.r;markCollision(b);b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
@@ -106,6 +108,7 @@ function physics(h){
  if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
  else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
 }
+function markCollision(b){b.frictionActive=true;if(b.kind==='ball'&&b.lastBallCollisionTick!==physicsTick){b.ballCollisionCount=(b.ballCollisionCount||0)+1;b.lastBallCollisionTick=physicsTick;}}
 function wallSpin(b,tangentSpeed){
  // Visual spin only: it never changes the body's travel speed or direction.
  b.spin+=clamp(tangentSpeed*.018,-9,9)*(b.kind==='ball'?1.0:.7);
@@ -126,7 +129,7 @@ function collide(a,b){
  const j=-(1+restitution)*normalSpeed/total;
  a.vx-=j*a.inv*nx;a.vy-=j*a.inv*ny;
  b.vx+=j*b.inv*nx;b.vy+=j*b.inv*ny;
-  a.frictionActive=true;b.frictionActive=true;
+  markCollision(a);markCollision(b);
  // Collision adds restrained visual spin without applying tangential
  // impulses to linear velocity, preserving the existing gameplay friction.
  const tx=-ny,ty=nx,ra=a.r,rb=b.r;
