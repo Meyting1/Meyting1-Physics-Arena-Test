@@ -56,10 +56,12 @@ let activePointers=new Set(),aimPointerId=null,directionPointerId=null,powerPull
 const pointerPositions=new Map();
 function updateSharedAim(pointerId,p){
  if(!selected)return;
- // This is the one authoritative vector: the guide and released shot both use it unchanged.
- const v={x:selected.x-p.x,y:selected.y-p.y};
+ const previous=pointerPositions.get(pointerId);
+ if(!previous)return;
+ // Each active finger contributes its movement to the same pull vector.
+ const base=directionVector||{x:0,y:0};
+ const v={x:base.x-(p.x-previous.x),y:base.y-(p.y-previous.y)};
  if(Math.hypot(v.x,v.y)>2){
-  // Keep one shared vector object for both the visible guide and the shot.
   directionVector={x:v.x,y:v.y};
   powerPull=directionVector;
   lastAimPointerId=pointerId;
@@ -71,18 +73,19 @@ canvas.addEventListener('pointerdown',e=>{
  if(selected&&aimPointerId!==null&&e.pointerId!==aimPointerId&&directionPointerId===null){
   directionStart=p;directionPointerId=e.pointerId;usedSecondFinger=true;activePointers.add(e.pointerId);pointerPositions.set(e.pointerId,p);
   try{canvas.setPointerCapture(e.pointerId)}catch{}
-  updateSharedAim(e.pointerId,p);
+  // The second finger starts contributing from its own touch point; it does not replace the current aim.
   e.preventDefault();return;
  }
  if(aimPointerId!==null||moving()||turn!=='A')return;
  let hit=teamA.map(i=>bodies[i]).filter(b=>Math.hypot(p.x-b.x,p.y-b.y)<(b.r+18)*3)
    .sort((a,b)=>Math.hypot(p.x-a.x,p.y-a.y)-Math.hypot(p.x-b.x,p.y-b.y))[0];
- if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;powerPull=null;directionVector=null;directionStart=null;usedSecondFinger=false;lastAimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pointerPositions.clear();pointerPositions.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId)}
+ if(hit){selected=hit;aim={x:p.x,y:p.y};aimPointerId=e.pointerId;directionPointerId=null;directionVector={x:hit.x-p.x,y:hit.y-p.y};powerPull=directionVector;directionStart=null;usedSecondFinger=false;lastAimPointerId=e.pointerId;activePointers=new Set([e.pointerId]);pointerPositions.clear();pointerPositions.set(e.pointerId,p);canvas.setPointerCapture(e.pointerId)}
 });
 canvas.addEventListener('pointermove',e=>{
  if(!selected||!activePointers.has(e.pointerId))return;
- const p=pos(e);pointerPositions.set(e.pointerId,p);
+ const p=pos(e);
  updateSharedAim(e.pointerId,p);
+ pointerPositions.set(e.pointerId,p);
 });
 canvas.addEventListener('pointerup',e=>{
  if(!activePointers.has(e.pointerId))return;
