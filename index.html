@@ -323,16 +323,8 @@ function drawArenaEdits(){
  ctx.strokeStyle='rgba(255,255,255,.52)';ctx.lineWidth=1;
  ctx.beginPath();ctx.moveTo(247,2);ctx.lineTo(613,2);ctx.lineTo(637,29);ctx.stroke();
  ctx.beginPath();ctx.moveTo(1282,2);ctx.lineTo(916,2);ctx.lineTo(892,29);ctx.stroke();
- // Level labels and metallic star emblems remain; player names are not drawn.
- // Level labels intentionally omitted; the silver panels remain blank.
- const star=(cx,cy,r)=>{
-  ctx.beginPath();
-  for(let i=0;i<10;i++){const an=-Math.PI/2+i*Math.PI/5,rad=i%2?r*.46:r,x=cx+Math.cos(an)*rad,y=cy+Math.sin(an)*rad;if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
-  ctx.closePath();ctx.fillStyle=grad(cx-r,cy-r,2*r,2*r,[[0,'#fff9d9'],[.25,'#d7d6c8'],[.55,'#8c8d86'],[.8,'#f0e8c9'],[1,'#686960']]);ctx.fill();
-  ctx.strokeStyle='#6c6656';ctx.lineWidth=2;ctx.stroke();
-  ctx.strokeStyle='rgba(255,255,255,.6)';ctx.lineWidth=1;ctx.stroke();
- };
- // Player stars removed; keep both silver name plates clean.
+ // Level labels and star emblems are intentionally omitted; both silver panels remain blank.
+ // No star graphics are drawn in the player-name panels.
  // Score housings are retained, with no score digits.
  path([[621,0],[714,0],[740,27],[721,68],[624,68],[644,34]],grad(621,0,119,68,[[0,'#343432'],[.24,'#111211'],[.72,'#030404'],[1,'#222321']]),'#514b3f',2);
  path([[815,0],[908,0],[886,34],[905,68],[808,68],[789,27]],grad(789,0,119,68,[[0,'#222321'],[.28,'#030404'],[.76,'#111211'],[1,'#343432']]),'#514b3f',2);
