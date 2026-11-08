@@ -35,7 +35,7 @@ function setup(){
  bodies.length=0;
  bodies.push(make(W*.24,H/2,27,5,'#53f5e8','strikerA'));
  bodies.push(make(W*.76,H/2,27,5,'#ff4f9a','strikerB'));
- bodies.push(make(W/2,H/2,10,.82,'#f5fbff','ball'));
+ bodies.push(make((FIELD.left+FIELD.right)/2,(FIELD.top+FIELD.bottom)/2,10,.82,'#f5fbff','ball'));
  for(let i=0;i<4;i++){const y=H/2+(i-1.5)*76;bodies.push(make(W*.38,y,27,5,'#1fb9c9','discA'));bodies.push(make(W*.62,y,27,5,'#c73578','discB'));}
  particles=[];trails=[];aim=null;selected=null;turn='A';settleTimer=0;updateTurn();
 }
