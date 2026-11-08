@@ -94,8 +94,11 @@ function beginAim(p,id){
    powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
    powerStart=p;
   }else if(directionPointerId===null&&powerPointerId!==null){
-   // A new finger takes over direction by marking a fresh target point.
+   // Preserve the existing pull-back magnitude when finger 2 joins.
+   dualPowerVector={x:gestureVector.x,y:gestureVector.y};
+   powerLength=Math.hypot(dualPowerVector.x,dualPowerVector.y);
    directionPointerId=id;
+   // Finger 2 marks a fresh target point; it does not set power.
    const dx=p.x-selected.x,dy=p.y-selected.y,len=Math.hypot(dx,dy);
    if(len>3)directionUnit={x:dx/len,y:dy/len};
    else{
