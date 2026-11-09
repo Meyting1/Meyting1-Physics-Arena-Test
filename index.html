@@ -318,6 +318,12 @@ function ai(){
  strike(striker,dx/len*108,dy/len*108);
 }
 function drawArenaEdits(){
+function roundedRectPath(context,x,y,w,h,r){
+ r=Math.max(0,Math.min(r,w/2,h/2));
+ context.beginPath();context.moveTo(x+r,y);context.arcTo(x+w,y,x+w,y+h,r);
+ context.arcTo(x+w,y+h,x,y+h,r);context.arcTo(x,y+h,x,y,r);
+ context.arcTo(x,y,x+w,y,r);context.closePath();
+}
 function drawTeamSelection(){
  const bg=ctx.createLinearGradient(0,0,W,H);
  bg.addColorStop(0,'#071426');bg.addColorStop(.48,'#102c43');bg.addColorStop(1,'#050d19');
@@ -340,11 +346,11 @@ function drawTeamSelection(){
   ctx.save();
   ctx.shadowColor=active?'rgba(65,255,229,.65)':'rgba(0,0,0,.38)';
   ctx.shadowBlur=active?26:14;ctx.shadowOffsetY=8;
-  ctx.beginPath();ctx.roundRect(x,y,w,h,18);
+  ctx.beginPath();roundedRectPath(ctx,x,y,w,h,18);
   ctx.fillStyle=active?'#123b49':'#102235';ctx.fill();
   ctx.lineWidth=active?4:2;ctx.strokeStyle=active?'#55f5df':'#34556b';ctx.stroke();
   ctx.restore();
-  ctx.save();ctx.beginPath();ctx.roundRect(x+35,y+28,165,165,14);ctx.clip();
+  ctx.save();ctx.beginPath();roundedRectPath(ctx,x+35,y+28,165,165,14);ctx.clip();
   ctx.fillStyle='#f4f6f8';ctx.fillRect(x+35,y+28,165,165);
   const im=team.image;
   if(im.complete&&im.naturalWidth){
@@ -360,7 +366,7 @@ function drawTeamSelection(){
  });
  const enabled=chosenTeam>=0;
  ctx.save();ctx.shadowColor=enabled?'rgba(49,255,220,.4)':'transparent';ctx.shadowBlur=enabled?20:0;
- ctx.beginPath();ctx.roundRect(570,555,390,78,16);ctx.fillStyle=enabled?'#20cbb6':'#334957';ctx.fill();
+ ctx.beginPath();roundedRectPath(ctx,570,555,390,78,16);ctx.fillStyle=enabled?'#20cbb6':'#334957';ctx.fill();
  ctx.strokeStyle=enabled?'#8ffff0':'#536977';ctx.lineWidth=2;ctx.stroke();ctx.restore();
  ctx.fillStyle=enabled?'#041b20':'#a9bbc3';ctx.font='900 22px system-ui';
  ctx.fillText('CONTINUE',W/2,594);
@@ -380,7 +386,7 @@ function drawTeamSelection(){
   if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
  };
  const round=(x,y,w,h,r,fill,stroke='#5a554b',lw=2)=>{
-  ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
+  ctx.beginPath();roundedRectPath(ctx,x,y,w,h,r);ctx.fillStyle=fill;ctx.fill();
   if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke()}
  };
  // Dark steel header base with a subtle brushed highlight and lower bevel.
