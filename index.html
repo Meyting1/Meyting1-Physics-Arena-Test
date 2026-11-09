@@ -373,7 +373,7 @@ function draw(){
    ctx.shadowBlur=0;
    // The side layer follows the disc position without rotating.
    if(pieceSide.complete&&pieceSide.naturalWidth){
-    ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r-20,b.r*2,b.r*2+8);
+    ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r-24,b.r*2,b.r*2+8);
    }
     // The face layer rotates with the disc.
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
