@@ -478,19 +478,16 @@ function draw(){
     }else{
      ctx.fillStyle='#d9d9d9';ctx.fill();
     }
+    // Darken only the AI club-logo face, matching its exact circular bounds.
+    if(isOpponentPiece&&chosenTeam>=0&&opponentTeam===chosenTeam){
+     ctx.fillStyle='rgba(0,0,0,0.20)';ctx.fillRect(-b.r,-b.r,b.r*2,b.r*2);
+    }
     ctx.restore();
     // The top overlay follows the disc but stays upright (no rotation).
     if(pieceTop.complete&&pieceTop.naturalWidth){
      ctx.save();ctx.translate(b.x,b.y);
      ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
      ctx.drawImage(pieceTop,-b.r,-b.r,b.r*2,b.r*2);
-     ctx.restore();
-    }
-    // If both sides chose the same club, darken only the AI pieces so the teams stay distinguishable.
-    if(isOpponentPiece&&chosenTeam>=0&&opponentTeam===chosenTeam){
-     ctx.save();ctx.translate(b.x,b.y);
-     ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-     ctx.fillStyle='rgba(0,0,0,0.38)';ctx.fillRect(-b.r,-b.r,b.r*2,b.r*2);
      ctx.restore();
     }
     ctx.restore();continue;
