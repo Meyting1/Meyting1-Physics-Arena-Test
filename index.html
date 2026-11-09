@@ -470,8 +470,9 @@ function draw(){
     // The face layer rotates with the disc.
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
     ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-    if(pieceFace.complete&&pieceFace.naturalWidth){
-     ctx.drawImage(pieceFace,-b.r,-b.r,b.r*2,b.r*2);
+    const faceImage=(b.kind==='strikerA'||b.kind==='discA')&&chosenTeam>=0?teamChoices[chosenTeam].image:pieceFace;
+    if(faceImage.complete&&faceImage.naturalWidth){
+     ctx.drawImage(faceImage,-b.r,-b.r,b.r*2,b.r*2);
     }else{
      ctx.fillStyle='#d9d9d9';ctx.fill();
     }
