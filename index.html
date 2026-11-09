@@ -158,9 +158,9 @@ function moveAim(id,p){
  if(!selected||!activePointers.has(id))return;
  if(!twoFingerMode){
   if(id===powerPointerId){
-   // Keep the original one-finger aiming behavior unchanged.
-   const previous=pointerPositions.get(id);
-   if(previous){gestureVector.x-=(p.x-previous.x);gestureVector.y-=(p.y-previous.y);}
+   // Anchor aiming to the exact physics center shown by the blue collision circle.
+   // Recalculate from that fixed center on every pointer movement.
+   gestureVector={x:selected.x-p.x,y:selected.y-p.y};
    aim={x:p.x,y:p.y};
   }
  }else if(id===powerPointerId||id===directionPointerId){
