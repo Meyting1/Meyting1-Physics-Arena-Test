@@ -24,7 +24,7 @@ const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
 let dpr=1,scale=1,offsetX=0,offsetY=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
-let screenState='teamSelect',chosenTeam=-1;
+let screenState='teamSelect',chosenTeam=-1,opponentTeam=-1;
 const teamChoices=[
  {name:'ESTEGHLAL',file:'teams/esteghlal.png',image:new Image()},
  {name:'PERSEPOLIS',file:'teams/Perspolis.png',image:new Image()},
@@ -105,7 +105,7 @@ function beginAim(p,id){
    }
   }
   if(chosenTeam>=0&&p.x>=570&&p.x<=960&&p.y>=555&&p.y<=635){
-   screenState='game';setup();return;
+   opponentTeam=Math.floor(Math.random()*teamChoices.length);screenState='game';setup();return;
   }
   return;
  }
@@ -470,7 +470,9 @@ function draw(){
     // The face layer rotates with the disc.
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
     ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-    const faceImage=(b.kind==='strikerA'||b.kind==='discA')&&chosenTeam>=0?teamChoices[chosenTeam].image:pieceFace;
+    const isPlayerPiece=b.kind==='strikerA'||b.kind==='discA';
+    const isOpponentPiece=b.kind==='strikerB'||b.kind==='discB';
+    const faceImage=isPlayerPiece&&chosenTeam>=0?teamChoices[chosenTeam].image:isOpponentPiece&&opponentTeam>=0?teamChoices[opponentTeam].image:pieceFace;
     if(faceImage.complete&&faceImage.naturalWidth){
      ctx.drawImage(faceImage,-b.r,-b.r,b.r*2,b.r*2);
     }else{
@@ -482,6 +484,13 @@ function draw(){
      ctx.save();ctx.translate(b.x,b.y);
      ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
      ctx.drawImage(pieceTop,-b.r,-b.r,b.r*2,b.r*2);
+     ctx.restore();
+    }
+    // If both sides chose the same club, darken only the AI pieces so the teams stay distinguishable.
+    if(isOpponentPiece&&chosenTeam>=0&&opponentTeam===chosenTeam){
+     ctx.save();ctx.translate(b.x,b.y);
+     ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
+     ctx.fillStyle='rgba(0,0,0,0.38)';ctx.fillRect(-b.r,-b.r,b.r*2,b.r*2);
      ctx.restore();
     }
     ctx.restore();continue;
