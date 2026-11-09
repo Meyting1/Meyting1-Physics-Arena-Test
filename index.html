@@ -74,7 +74,7 @@ let powerPointerId=null,directionPointerId=null;
 let powerStart=null,powerLength=0,powerBase=0,powerRadialStart=0,powerRadialBase=0,directionUnit=null,directionTarget=null,twoFingerMode=false;
 let dualPowerVector=null;
 let pinchStartDistance=0,pinchStartAngle=0,pinchBasePower=0,pinchBaseDirection=0;
-let gestureVector=null,gestureCancelled=false,singleFingerBase=null;
+let gestureVector=null,gestureCancelled=false;
 function screenPoint(clientX,clientY){
  const r=canvas.getBoundingClientRect();
  const sx=(clientX-r.left)*dpr,sy=(clientY-r.top)*dpr;
@@ -88,16 +88,12 @@ function refreshAim(){
 function resetTwoFingerBaseline(){
  if(powerPointerId===null||directionPointerId===null)return;
  const powerPoint=pointerPositions.get(powerPointerId),directionPoint=pointerPositions.get(directionPointerId);
- if(!powerPoint||!directionPoint||!selected)return;
- // Both controls use the blue collision-circle center as their common origin.
- powerRadialStart=Math.hypot(powerPoint.x-selected.x,powerPoint.y-selected.y);
- powerRadialBase=powerLength;
- const dx=directionPoint.x-selected.x,dy=directionPoint.y-selected.y,len=Math.hypot(dx,dy);
- if(len>3){
-  directionUnit={x:dx/len,y:dy/len};
-  directionTarget={x:dx,y:dy};
- }
- refreshAim();
+ if(!powerPoint||!directionPoint)return;
+ const dx=directionPoint.x-powerPoint.x,dy=directionPoint.y-powerPoint.y;
+ pinchStartDistance=Math.hypot(dx,dy);
+ pinchStartAngle=Math.atan2(dy,dx);
+ pinchBasePower=powerLength;
+ pinchBaseDirection=Math.atan2(directionUnit.y,directionUnit.x);
 }
 function beginAim(p,id){
  if(screenState==='teamSelect'){
@@ -123,7 +119,7 @@ function beginAim(p,id){
   // Preserve the original one-finger pull-back vector until a second finger is added.
   gestureVector={x:hit.x-p.x,y:hit.y-p.y};
   twoFingerMode=false;powerStart=p;powerBase=0;powerLength=0;powerRadialStart=0;powerRadialBase=0;directionUnit=null;directionTarget=null;
-  gestureCancelled=false;singleFingerBase=null;aim={x:p.x,y:p.y};
+  gestureCancelled=false;aim={x:p.x,y:p.y};
  }else if(activePointers.size===1&&selected){
   // Reassign whichever control finger was lifted while the other one remains down.
   twoFingerMode=true;
@@ -162,28 +158,22 @@ function moveAim(id,p){
  if(!selected||!activePointers.has(id))return;
  if(!twoFingerMode){
   if(id===powerPointerId){
-   // Continue smoothly from the current two-finger aim if only one finger remains.
-   if(singleFingerBase){
-    gestureVector={
-     x:singleFingerBase.vector.x+singleFingerBase.point.x-p.x,
-     y:singleFingerBase.vector.y+singleFingerBase.point.y-p.y
-    };
-   }else{
-    // Normal one-finger aiming remains anchored to the physics center.
-    gestureVector={x:selected.x-p.x,y:selected.y-p.y};
-   }
+   // Anchor aiming to the exact physics center shown by the blue collision circle.
+   // Recalculate from that fixed center on every pointer movement.
+   gestureVector={x:selected.x-p.x,y:selected.y-p.y};
    aim={x:p.x,y:p.y};
   }
  }else if(id===powerPointerId||id===directionPointerId){
-  // Power is measured from the blue circle center to finger one.
-  // Direction is measured from that same center to finger two.
+  // Both fingers jointly control power (distance) and direction (rotation).
   pointerPositions.set(id,p);
   const powerPoint=pointerPositions.get(powerPointerId),directionPoint=pointerPositions.get(directionPointerId);
   if(powerPoint&&directionPoint){
-   const radialDistance=Math.hypot(powerPoint.x-selected.x,powerPoint.y-selected.y);
-   powerLength=clamp(powerRadialBase+(radialDistance-powerRadialStart),0,150);
-   const dx=directionPoint.x-selected.x,dy=directionPoint.y-selected.y,len=Math.hypot(dx,dy);
-   if(len>3)directionUnit={x:dx/len,y:dy/len};
+   const dx=directionPoint.x-powerPoint.x,dy=directionPoint.y-powerPoint.y;
+   const distance=Math.hypot(dx,dy),angle=Math.atan2(dy,dx);
+   powerLength=clamp(pinchBasePower+(distance-pinchStartDistance),0,150);
+   const angleDelta=Math.atan2(Math.sin(angle-pinchStartAngle),Math.cos(angle-pinchStartAngle));
+   const shotAngle=pinchBaseDirection+angleDelta;
+   directionUnit={x:Math.cos(shotAngle),y:Math.sin(shotAngle)};
    refreshAim();
   }
   aim={x:p.x,y:p.y};
@@ -201,17 +191,13 @@ function finishAim(id,cancelled=false){
   // Fall back to one-finger aiming without ending the current shot.
   const remainingId=activePointers.values().next().value;
   const remainingPoint=pointerPositions.get(remainingId);
-  singleFingerBase=remainingPoint&&gestureVector?{
-   point:{x:remainingPoint.x,y:remainingPoint.y},
-   vector:{x:gestureVector.x,y:gestureVector.y}
-  }:null;
   powerPointerId=remainingId;directionPointerId=null;twoFingerMode=false;
   if(remainingPoint)aim={x:remainingPoint.x,y:remainingPoint.y};
  }else if(activePointers.size===0){
   if(!gestureCancelled&&selected&&gestureVector)strike(selected,gestureVector.x,gestureVector.y);
   selected=null;aim=null;powerPointerId=null;directionPointerId=null;
   powerStart=null;powerLength=0;powerBase=0;powerRadialStart=0;powerRadialBase=0;directionUnit=null;directionTarget=null;twoFingerMode=false;dualPowerVector=null;
-  gestureVector=null;gestureCancelled=false;singleFingerBase=null;pointerPositions.clear();touchPositions.clear();
+  gestureVector=null;gestureCancelled=false;pointerPositions.clear();touchPositions.clear();
  }
 }
 canvas.addEventListener('touchstart',e=>{
