@@ -24,13 +24,13 @@ const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
 let dpr=1,scale=1,offsetX=0,offsetY=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
-const badgeA=new Image(),badgeB=new Image(),discSidewall=new Image();
-discSidewall.src='assets/disc-sidewall.svg';
+const pieceFace=new Image(),pieceSide=new Image();
+pieceFace.src='piece-logo.png';
+pieceSide.src='piece-side.png';
 const ballTexture=new Image();ballTexture.src='ball_exact.jpg';
 // Keep the original high-resolution arena artwork for maximum visual fidelity.
 const fieldTexture=new Image();fieldTexture.src='1794090316714.jpg';
-fetch('assets/badge-a.base64').then(r=>r.text()).then(data=>{badgeA.src='data:image/jpeg;base64,'+data.trim()});
-fetch('assets/badge-b.base64').then(r=>r.text()).then(data=>{badgeB.src='data:image/jpeg;base64,'+data.trim()});
+
 const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0,angle:0,frictionActive:false});
 function setup(){
  bodies.length=0;
@@ -370,17 +370,19 @@ function draw(){
     ctx.restore();
    }
   }else{
-   const badge=b.kind.endsWith('A')?badgeA:badgeB;
    ctx.shadowBlur=0;
-   // The thickness is a separate upright layer: it follows the disc position, never its rotation.
-   if(discSidewall.complete&&discSidewall.naturalWidth){
-    ctx.drawImage(discSidewall,b.x-b.r,b.y-b.r+8,b.r*2,b.r*2+8);
+   // The side layer follows the disc position without rotating.
+   if(pieceSide.complete&&pieceSide.naturalWidth){
+    ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r+8,b.r*2,b.r*2+8);
    }
-   // Only the original logo + white rim rotate after collisions.
+   // The clean face rotates with the disc; team artwork can be layered here separately later.
    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
    ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-   if(badge.complete&&badge.naturalWidth)ctx.drawImage(badge,4,0,88,88,-b.r,-b.r,b.r*2,b.r*2);
-   else{ctx.fillStyle=b.kind.endsWith('A')?'#1765a8':'#d71920';ctx.fill()}
+   if(pieceFace.complete&&pieceFace.naturalWidth){
+    ctx.drawImage(pieceFace,-b.r,-b.r,b.r*2,b.r*2);
+   }else{
+    ctx.fillStyle='#d9d9d9';ctx.fill();
+   }
    ctx.restore();ctx.restore();continue;
   }
   ctx.restore();
