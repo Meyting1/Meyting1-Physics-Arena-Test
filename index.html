@@ -373,7 +373,7 @@ function draw(){
    ctx.shadowBlur=0;
    // The side layer follows the disc position without rotating.
    if(pieceSide.complete&&pieceSide.naturalWidth){
-    ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r,b.r*2,b.r*2);
+    ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r+8,b.r*2,b.r*2+8);
    }
    // The clean face rotates with the disc; team artwork can be layered here separately later.
    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
