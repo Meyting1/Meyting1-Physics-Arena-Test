@@ -24,8 +24,9 @@ const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
 let dpr=1,scale=1,offsetX=0,offsetY=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
-const pieceSide=new Image();
-pieceSide.src='piece-side.png';
+const pieceFace=new Image(),pieceSide=new Image();
+pieceSide.src='piece-logo.png';
+pieceFace.src='piece-side.png';
 const ballTexture=new Image();ballTexture.src='ball_exact.jpg';
 // Keep the original high-resolution arena artwork for maximum visual fidelity.
 const fieldTexture=new Image();fieldTexture.src='1794090316714.jpg';
@@ -374,8 +375,15 @@ function draw(){
    if(pieceSide.complete&&pieceSide.naturalWidth){
     ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r+8,b.r*2,b.r*2+8);
    }
-    // Face image layer removed for this visibility test.
-    ctx.restore();continue;
+    // The face layer rotates with the disc.
+    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
+    ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
+    if(pieceFace.complete&&pieceFace.naturalWidth){
+     ctx.drawImage(pieceFace,-b.r,-b.r,b.r*2,b.r*2);
+    }else{
+     ctx.fillStyle='#d9d9d9';ctx.fill();
+    }
+    ctx.restore();ctx.restore();continue;
   }
   ctx.restore();
  }
