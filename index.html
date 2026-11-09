@@ -373,7 +373,13 @@ function draw(){
    ctx.shadowBlur=0;
    // The side layer follows the disc position without rotating.
    if(pieceSide.complete&&pieceSide.naturalWidth){
+    // Show only the lower half of the fixed side layer; the face covers the seam.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(b.x-b.r,b.y,b.r*2,b.r+9.8176);
+    ctx.clip();
     ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r-3.488,b.r*2,b.r*2+13.3056);
+    ctx.restore();
    }
     // The face layer rotates with the disc.
     ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
