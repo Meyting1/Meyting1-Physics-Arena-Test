@@ -260,8 +260,12 @@ function physics(h){
   // The white goal line is open for every body; the net's far end is the new wall.
   const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
   const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
-  if(b.x-hitRadius<FIELD.left&&!beyondLeftGoal){b.x=FIELD.left+hitRadius;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  if(b.x+hitRadius>FIELD.right&&!beyondRightGoal){b.x=FIELD.right-hitRadius;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  // Open the side-wall collision as soon as the disc's leading edge reaches the goal mouth.
+  // Checking only the center here caused the disc to rebound before it could cross the line.
+  const enteringLeftGoal=inGoalMouth&&b.x-hitRadius<FIELD.left;
+  const enteringRightGoal=inGoalMouth&&b.x+hitRadius>FIELD.right;
+  if(b.x-hitRadius<FIELD.left&&!enteringLeftGoal){b.x=FIELD.left+hitRadius;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.x+hitRadius>FIELD.right&&!enteringRightGoal){b.x=FIELD.right-hitRadius;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   // Back walls at the end of each net tunnel, with the same rebound response as field walls.
   if(beyondLeftGoal&&b.x-hitRadius<FIELD.left-goalDepth){b.x=FIELD.left-goalDepth+hitRadius;markCollision(b,'net-back-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   if(beyondRightGoal&&b.x+hitRadius>FIELD.right+goalDepth){b.x=FIELD.right+goalDepth-hitRadius;markCollision(b,'net-back-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
