@@ -255,10 +255,21 @@ function physics(h){
   b.angle+=(Math.hypot(b.vx,b.vy)/b.r+b.spin)*h;
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
-  const inGoal=b.kind==='ball'&&b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
-  // Four actual playing-field edges, not the outer canvas/image edges.
-  if(b.x-b.r*.73416<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r*.73416;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  if(b.x+b.r*.73416>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r*.73416;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  const hitRadius=b.r*.73416;
+  const inGoalMouth=b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
+  // The white goal line is open for every body; the net's far end is the new wall.
+  const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
+  const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
+  if(b.x-hitRadius<FIELD.left&&!beyondLeftGoal){b.x=FIELD.left+hitRadius;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.x+hitRadius>FIELD.right&&!beyondRightGoal){b.x=FIELD.right-hitRadius;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  // Back walls at the end of each net tunnel, with the same rebound response as field walls.
+  if(beyondLeftGoal&&b.x-hitRadius<FIELD.left-goalDepth){b.x=FIELD.left-goalDepth+hitRadius;markCollision(b,'net-back-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(beyondRightGoal&&b.x+hitRadius>FIELD.right+goalDepth){b.x=FIELD.right+goalDepth-hitRadius;markCollision(b,'net-back-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  // The upper and lower edges of the net tunnel also behave like walls.
+  if(beyondLeftGoal||beyondRightGoal){
+   if(b.y-hitRadius<FIELD.goalTop){b.y=FIELD.goalTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+   if(b.y+hitRadius>FIELD.goalBottom){b.y=FIELD.goalBottom-hitRadius;markCollision(b,'net-side-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  }
   if(b.y-b.r*.73416<FIELD.top){b.y=FIELD.top+b.r*.73416;markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
   if(b.y+b.r*.73416>FIELD.bottom){b.y=FIELD.bottom-b.r*.73416;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
@@ -269,8 +280,9 @@ function physics(h){
  const ballSpeed=Math.hypot(bodies[2].vx,bodies[2].vy);
  if(ballSpeed>2310){bodies[2].vx*=2310/ballSpeed;bodies[2].vy*=2310/ballSpeed}
  const ball=bodies[2];
- if(ball.x>FIELD.right+ball.r*.5){scoreA++;goal('A')}
- else if(ball.x<FIELD.left-ball.r*.5){scoreB++;goal('B')}
+ // A goal counts only after 90% of the ball's diameter has crossed the goal line.
+ if(ball.x>FIELD.right+ball.r*.8){scoreA++;goal('A')}
+ else if(ball.x<FIELD.left-ball.r*.8){scoreB++;goal('B')}
 }
 function markCollision(b,key='wall'){b.frictionActive=true;if(b.kind==='ball'){const current=b._contactsThisTick||new Set();current.add(key);}}
 function wallSpin(b,tangentSpeed){
