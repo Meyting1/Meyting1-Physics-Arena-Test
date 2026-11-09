@@ -497,10 +497,7 @@ function draw(){
   }
   ctx.restore();
  }
- // TEMP DEBUG: draw collision circles ABOVE every artwork layer so rotating images cannot hide them.
- ctx.save();ctx.strokeStyle='#168cff';ctx.lineWidth=3;ctx.setLineDash([3,7]);ctx.globalAlpha=.95;
- for(const b of bodies){ctx.beginPath();ctx.arc(b.x,b.y,b.r*.6992,0,Math.PI*2);ctx.stroke();}
- ctx.setLineDash([]);ctx.restore();
+
  if(selected&&gestureVector){
  const b=selected,len=Math.hypot(gestureVector.x,gestureVector.y),shownLength=Math.min(len,150),power=Math.min(len,150);
  const nx=len>0?gestureVector.x/len:0,ny=len>0?gestureVector.y/len:0;
