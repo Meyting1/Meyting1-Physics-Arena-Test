@@ -88,12 +88,16 @@ function refreshAim(){
 function resetTwoFingerBaseline(){
  if(powerPointerId===null||directionPointerId===null)return;
  const powerPoint=pointerPositions.get(powerPointerId),directionPoint=pointerPositions.get(directionPointerId);
- if(!powerPoint||!directionPoint)return;
- const dx=directionPoint.x-powerPoint.x,dy=directionPoint.y-powerPoint.y;
- pinchStartDistance=Math.hypot(dx,dy);
- pinchStartAngle=Math.atan2(dy,dx);
- pinchBasePower=powerLength;
- pinchBaseDirection=Math.atan2(directionUnit.y,directionUnit.x);
+ if(!powerPoint||!directionPoint||!selected)return;
+ // Both controls use the blue collision-circle center as their common origin.
+ powerRadialStart=Math.hypot(powerPoint.x-selected.x,powerPoint.y-selected.y);
+ powerRadialBase=powerLength;
+ const dx=directionPoint.x-selected.x,dy=directionPoint.y-selected.y,len=Math.hypot(dx,dy);
+ if(len>3){
+  directionUnit={x:dx/len,y:dy/len};
+  directionTarget={x:dx,y:dy};
+ }
+ refreshAim();
 }
 function beginAim(p,id){
  if(screenState==='teamSelect'){
@@ -164,16 +168,15 @@ function moveAim(id,p){
    aim={x:p.x,y:p.y};
   }
  }else if(id===powerPointerId||id===directionPointerId){
-  // Both fingers jointly control power (distance) and direction (rotation).
+  // Power is measured from the blue circle center to finger one.
+  // Direction is measured from that same center to finger two.
   pointerPositions.set(id,p);
   const powerPoint=pointerPositions.get(powerPointerId),directionPoint=pointerPositions.get(directionPointerId);
   if(powerPoint&&directionPoint){
-   const dx=directionPoint.x-powerPoint.x,dy=directionPoint.y-powerPoint.y;
-   const distance=Math.hypot(dx,dy),angle=Math.atan2(dy,dx);
-   powerLength=clamp(pinchBasePower+(distance-pinchStartDistance),0,150);
-   const angleDelta=Math.atan2(Math.sin(angle-pinchStartAngle),Math.cos(angle-pinchStartAngle));
-   const shotAngle=pinchBaseDirection+angleDelta;
-   directionUnit={x:Math.cos(shotAngle),y:Math.sin(shotAngle)};
+   const radialDistance=Math.hypot(powerPoint.x-selected.x,powerPoint.y-selected.y);
+   powerLength=clamp(powerRadialBase+(radialDistance-powerRadialStart),0,150);
+   const dx=directionPoint.x-selected.x,dy=directionPoint.y-selected.y,len=Math.hypot(dx,dy);
+   if(len>3)directionUnit={x:dx/len,y:dy/len};
    refreshAim();
   }
   aim={x:p.x,y:p.y};
