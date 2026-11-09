@@ -43,10 +43,10 @@ const fieldTexture=new Image();fieldTexture.src='1794090316714.jpg';
 const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0,angle:0,frictionActive:false});
 function setup(){
  bodies.length=0;
- bodies.push(make(W*.24,H/2,44.9064,5,'#53f5e8','strikerA'));
- bodies.push(make(W*.76,H/2,44.9064,5,'#ff4f9a','strikerB'));
+ bodies.push(make(W*.24,H/2,47.15172,5,'#53f5e8','strikerA'));
+ bodies.push(make(W*.76,H/2,47.15172,5,'#ff4f9a','strikerB'));
  bodies.push(make((FIELD.left+FIELD.right)/2,(FIELD.top+FIELD.bottom)/2,13.2,.82,'#f5fbff','ball'));
- for(let i=0;i<4;i++){const y=H/2+(i-1.5)*76;bodies.push(make(W*.38,y,44.9064,5,'#1fb9c9','discA'));bodies.push(make(W*.62,y,44.9064,5,'#c73578','discB'));}
+ for(let i=0;i<4;i++){const y=H/2+(i-1.5)*76;bodies.push(make(W*.38,y,47.15172,5,'#1fb9c9','discA'));bodies.push(make(W*.62,y,47.15172,5,'#c73578','discB'));}
  particles=[];trails=[];aim=null;selected=null;turn='A';settleTimer=0;updateTurn();
 }
 function resize(){
@@ -257,10 +257,10 @@ function physics(h){
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const inGoal=b.kind==='ball'&&b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
   // Four actual playing-field edges, not the outer canvas/image edges.
-  if(b.x-b.r*.6992<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r*.6992;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  if(b.x+b.r*.6992>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r*.6992;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  if(b.y-b.r*.6992<FIELD.top){b.y=FIELD.top+b.r*.6992;markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
-  if(b.y+b.r*.6992>FIELD.bottom){b.y=FIELD.bottom-b.r*.6992;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.x-b.r*.73416<FIELD.left&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.left+b.r*.73416;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.x+b.r*.73416>FIELD.right&&!(b.kind==='ball'&&inGoal)){b.x=FIELD.right-b.r*.73416;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
+  if(b.y-b.r*.73416<FIELD.top){b.y=FIELD.top+b.r*.73416;markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.y+b.r*.73416>FIELD.bottom){b.y=FIELD.bottom-b.r*.73416;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++)
@@ -279,7 +279,7 @@ function wallSpin(b,tangentSpeed){
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
- let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=(a.r+b.r)*.6992;
+ let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=(a.r+b.r)*.73416;
  if(dist>=min)return;
  if(dist<1e-8){dx=1;dy=0;dist=1}
  const nx=dx/dist,ny=dy/dist,overlap=min-dist,total=a.inv+b.inv;
@@ -448,9 +448,9 @@ function draw(){
   if(b.kind==='ball'||!pieceSide.complete||!pieceSide.naturalWidth)continue;
   ctx.save();
   ctx.beginPath();
-  ctx.rect(b.x-b.r,b.y,b.r*2,b.r+9.8176);
+  ctx.rect(b.x-b.r,b.y,b.r*2,b.r+10.30848);
   ctx.clip();
-  ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r-7.488,b.r*2,b.r*2+13.3056);
+  ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r-7.8624,b.r*2,b.r*2+13.97088);
   ctx.restore();
  }
  // Pass 2: draw the ball after the thickness layer, but before club faces and top overlays.
