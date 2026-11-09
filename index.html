@@ -445,7 +445,8 @@ function draw(){
  if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
  drawArenaEdits();
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
- // Draw every fixed piece thickness layer first, so the ball is always rendered above it.
+ // Pass 1: fixed thickness layer for every disc.
+ // Keep its original geometry; only its depth is changed so the ball can cover it.
  for(const b of bodies){
   if(b.kind==='ball'||!pieceSide.complete||!pieceSide.naturalWidth)continue;
   ctx.save();
@@ -455,45 +456,47 @@ function draw(){
   ctx.drawImage(pieceSide,b.x-b.r,b.y-b.r-3.488,b.r*2,b.r*2+13.3056);
   ctx.restore();
  }
+ // Pass 2: draw the ball after the thickness layer, but before club faces and top overlays.
+ const ball=bodies.find(b=>b.kind==='ball');
+ if(ball){
+  if(Math.hypot(ball.vx,ball.vy)>.6)trails.push({x:ball.x,y:ball.y,r:ball.r*.8,color:'#d9ffff',life:18});
+  ctx.save();ctx.shadowColor=ball.color;ctx.shadowBlur=0;
+  if(ballTexture.complete&&ballTexture.naturalWidth){
+   ctx.save();ctx.translate(ball.x,ball.y);ctx.rotate(ball.angle);
+   ctx.beginPath();ctx.arc(0,0,ball.r,0,Math.PI*2);ctx.clip();
+   ctx.drawImage(ballTexture,-ball.r,-ball.r,ball.r*2,ball.r*2);
+   ctx.restore();
+  }
+  ctx.restore();
+ }
+ // Pass 3: render each disc's face and fixed top overlay together, preserving their alignment.
  for(const b of bodies){
-  if(b===selected){ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.shadowColor=b.color;ctx.shadowBlur=18;ctx.beginPath();ctx.arc(b.x,b.y,b.r+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0}
-  if(Math.hypot(b.vx,b.vy)>.6&&b.kind==='ball'){trails.push({x:b.x,y:b.y,r:b.r*.8,color:'#d9ffff',life:18})}
-  ctx.save();ctx.shadowColor=b.color;ctx.shadowBlur=b.kind==='ball'?22:15;
-  if(b.kind==='ball'){
-   ctx.shadowBlur=0;
-   if(ballTexture.complete&&ballTexture.naturalWidth){
-    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
-    ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-    ctx.drawImage(ballTexture,-b.r,-b.r,b.r*2,b.r*2);
-    ctx.restore();
-   }
+  if(b.kind==='ball')continue;
+  if(b===selected){
+   ctx.strokeStyle='#ffffff';ctx.lineWidth=3;ctx.shadowColor=b.color;ctx.shadowBlur=18;
+   ctx.beginPath();ctx.arc(b.x,b.y,b.r+7,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+  }
+  ctx.save();ctx.shadowColor=b.color;ctx.shadowBlur=0;
+  ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
+  ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
+  const isPlayerPiece=b.kind==='strikerA'||b.kind==='discA';
+  const isOpponentPiece=b.kind==='strikerB'||b.kind==='discB';
+  const faceImage=isPlayerPiece&&chosenTeam>=0?teamChoices[chosenTeam].image:isOpponentPiece&&opponentTeam>=0?teamChoices[opponentTeam].image:null;
+  if(faceImage&&faceImage.complete&&faceImage.naturalWidth){
+   ctx.drawImage(faceImage,-b.r,-b.r,b.r*2,b.r*2);
   }else{
-   ctx.shadowBlur=0;
-    // The face layer rotates with the disc.
-    ctx.save();ctx.translate(b.x,b.y);ctx.rotate(b.angle);
-    ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-    const isPlayerPiece=b.kind==='strikerA'||b.kind==='discA';
-    const isOpponentPiece=b.kind==='strikerB'||b.kind==='discB';
-    const faceImage=isPlayerPiece&&chosenTeam>=0?teamChoices[chosenTeam].image:isOpponentPiece&&opponentTeam>=0?teamChoices[opponentTeam].image:null;
-    if(faceImage&&faceImage.complete&&faceImage.naturalWidth){
-     ctx.drawImage(faceImage,-b.r,-b.r,b.r*2,b.r*2);
-    }else{
-     ctx.fillStyle='#d9d9d9';ctx.fill();
-    }
-    // Darken only the AI club-logo face, matching its exact circular bounds.
-    if(isOpponentPiece&&chosenTeam>=0&&opponentTeam===chosenTeam){
-     ctx.beginPath();ctx.arc(0,0,b.r*0.72,0,Math.PI*2);ctx.clip();
-     ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(-b.r*0.72,-b.r*0.72,b.r*1.44,b.r*1.44);
-    }
-    ctx.restore();
-    // The top overlay follows the disc but stays upright (no rotation).
-    if(pieceTop.complete&&pieceTop.naturalWidth){
-     ctx.save();ctx.translate(b.x,b.y);
-     ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
-     ctx.drawImage(pieceTop,-b.r,-b.r,b.r*2,b.r*2);
-     ctx.restore();
-    }
-    ctx.restore();continue;
+   ctx.fillStyle='#d9d9d9';ctx.fill();
+  }
+  if(isOpponentPiece&&chosenTeam>=0&&opponentTeam===chosenTeam){
+   ctx.beginPath();ctx.arc(0,0,b.r*0.72,0,Math.PI*2);ctx.clip();
+   ctx.fillStyle='rgba(0,0,0,0.55)';ctx.fillRect(-b.r*0.72,-b.r*0.72,b.r*1.44,b.r*1.44);
+  }
+  ctx.restore();
+  if(pieceTop.complete&&pieceTop.naturalWidth){
+   ctx.save();ctx.translate(b.x,b.y);
+   ctx.beginPath();ctx.arc(0,0,b.r,0,Math.PI*2);ctx.clip();
+   ctx.drawImage(pieceTop,-b.r,-b.r,b.r*2,b.r*2);
+   ctx.restore();
   }
   ctx.restore();
  }
