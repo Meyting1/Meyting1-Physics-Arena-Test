@@ -318,62 +318,7 @@ function ai(){
  strike(striker,dx/len*108,dy/len*108);
 }
 function drawArenaEdits(){
-function roundedRectPath(context,x,y,w,h,r){
- r=Math.max(0,Math.min(r,w/2,h/2));
- context.beginPath();context.moveTo(x+r,y);context.arcTo(x+w,y,x+w,y+h,r);
- context.arcTo(x+w,y+h,x,y+h,r);context.arcTo(x,y+h,x,y,r);
- context.arcTo(x,y,x+w,y,r);context.closePath();
-}
-function drawTeamSelection(){
- const bg=ctx.createLinearGradient(0,0,W,H);
- bg.addColorStop(0,'#071426');bg.addColorStop(.48,'#102c43');bg.addColorStop(1,'#050d19');
- ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
- // Futuristic pitch-inspired lines and soft light accents.
- ctx.save();ctx.globalAlpha=.18;ctx.strokeStyle='#42e8e0';ctx.lineWidth=2;
- for(let x=55;x<W;x+=110){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
- ctx.beginPath();ctx.arc(W/2,H/2,245,0,Math.PI*2);ctx.stroke();
- ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
- ctx.restore();
- const glow=ctx.createRadialGradient(W/2,260,30,W/2,260,600);
- glow.addColorStop(0,'rgba(34,211,203,.15)');glow.addColorStop(1,'rgba(34,211,203,0)');
- ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
- ctx.textAlign='center';ctx.textBaseline='middle';
- ctx.fillStyle='#dffcff';ctx.font='800 43px system-ui';ctx.fillText('CHOOSE YOUR TEAM',W/2,95);
- ctx.fillStyle='#91b7c8';ctx.font='500 18px system-ui';ctx.fillText('SELECT YOUR CLUB TO ENTER THE ARENA',W/2,139);
- const xs=[205,485,765,1045];
- teamChoices.forEach((team,i)=>{
-  const x=xs[i],y=205,w=235,h=305,active=chosenTeam===i;
-  ctx.save();
-  ctx.shadowColor=active?'rgba(65,255,229,.65)':'rgba(0,0,0,.38)';
-  ctx.shadowBlur=active?26:14;ctx.shadowOffsetY=8;
-  ctx.beginPath();roundedRectPath(ctx,x,y,w,h,18);
-  ctx.fillStyle=active?'#123b49':'#102235';ctx.fill();
-  ctx.lineWidth=active?4:2;ctx.strokeStyle=active?'#55f5df':'#34556b';ctx.stroke();
-  ctx.restore();
-  ctx.save();ctx.beginPath();roundedRectPath(ctx,x+35,y+28,165,165,14);ctx.clip();
-  ctx.fillStyle='#f4f6f8';ctx.fillRect(x+35,y+28,165,165);
-  const im=team.image;
-  if(im.complete&&im.naturalWidth){
-   const ratio=Math.min(145/im.naturalWidth,145/im.naturalHeight);
-   const iw=im.naturalWidth*ratio,ih=im.naturalHeight*ratio;
-   ctx.drawImage(im,x+117.5-iw/2,y+110.5-ih/2,iw,ih);
-  }
-  ctx.restore();
-  ctx.fillStyle=active?'#65ffe8':'#e6f2f7';ctx.font='800 19px system-ui';ctx.fillText(team.name,x+w/2,y+235);
-  ctx.fillStyle=active?'#65ffe8':'#8ba9b9';ctx.font='600 12px system-ui';
-  ctx.fillText(active?'SELECTED':'TAP TO SELECT',x+w/2,y+270);
-  if(active){ctx.strokeStyle='#65ffe8';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+w-22,y+22,9,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#65ffe8';ctx.beginPath();ctx.arc(x+w-22,y+22,4,0,Math.PI*2);ctx.fill()}
- });
- const enabled=chosenTeam>=0;
- ctx.save();ctx.shadowColor=enabled?'rgba(49,255,220,.4)':'transparent';ctx.shadowBlur=enabled?20:0;
- ctx.beginPath();roundedRectPath(ctx,570,555,390,78,16);ctx.fillStyle=enabled?'#20cbb6':'#334957';ctx.fill();
- ctx.strokeStyle=enabled?'#8ffff0':'#536977';ctx.lineWidth=2;ctx.stroke();ctx.restore();
- ctx.fillStyle=enabled?'#041b20':'#a9bbc3';ctx.font='900 22px system-ui';
- ctx.fillText('CONTINUE',W/2,594);
- ctx.textAlign='start';ctx.textBaseline='alphabetic';
-}
-
- // Rebuild only the top HUD. The original pitch and side artwork remain untouched.
+// Rebuild only the top HUD. The original pitch and side artwork remain untouched.
  const grad=(x,y,w,h,stops,vertical=true)=>{
   const g=vertical?ctx.createLinearGradient(x,y,x,y+h):ctx.createLinearGradient(x,y,x+w,y);
   for(const [p,c] of stops)g.addColorStop(p,c);
@@ -429,6 +374,61 @@ function drawTeamSelection(){
  avatar(64);avatar(1416);
  ctx.textBaseline='alphabetic';ctx.textAlign='start';
 }
+function roundedRectPath(context,x,y,w,h,r){
+ r=Math.max(0,Math.min(r,w/2,h/2));
+ context.beginPath();context.moveTo(x+r,y);context.arcTo(x+w,y,x+w,y+h,r);
+ context.arcTo(x+w,y+h,x,y+h,r);context.arcTo(x,y+h,x,y,r);
+ context.arcTo(x,y,x+w,y,r);context.closePath();
+}
+function drawTeamSelection(){
+ const bg=ctx.createLinearGradient(0,0,W,H);
+ bg.addColorStop(0,'#071426');bg.addColorStop(.48,'#102c43');bg.addColorStop(1,'#050d19');
+ ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+ // Futuristic pitch-inspired lines and soft light accents.
+ ctx.save();ctx.globalAlpha=.18;ctx.strokeStyle='#42e8e0';ctx.lineWidth=2;
+ for(let x=55;x<W;x+=110){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+ ctx.beginPath();ctx.arc(W/2,H/2,245,0,Math.PI*2);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();
+ ctx.restore();
+ const glow=ctx.createRadialGradient(W/2,260,30,W/2,260,600);
+ glow.addColorStop(0,'rgba(34,211,203,.15)');glow.addColorStop(1,'rgba(34,211,203,0)');
+ ctx.fillStyle=glow;ctx.fillRect(0,0,W,H);
+ ctx.textAlign='center';ctx.textBaseline='middle';
+ ctx.fillStyle='#dffcff';ctx.font='800 43px system-ui';ctx.fillText('CHOOSE YOUR TEAM',W/2,95);
+ ctx.fillStyle='#91b7c8';ctx.font='500 18px system-ui';ctx.fillText('SELECT YOUR CLUB TO ENTER THE ARENA',W/2,139);
+ const xs=[205,485,765,1045];
+ teamChoices.forEach((team,i)=>{
+  const x=xs[i],y=205,w=235,h=305,active=chosenTeam===i;
+  ctx.save();
+  ctx.shadowColor=active?'rgba(65,255,229,.65)':'rgba(0,0,0,.38)';
+  ctx.shadowBlur=active?26:14;ctx.shadowOffsetY=8;
+  ctx.beginPath();roundedRectPath(ctx,x,y,w,h,18);
+  ctx.fillStyle=active?'#123b49':'#102235';ctx.fill();
+  ctx.lineWidth=active?4:2;ctx.strokeStyle=active?'#55f5df':'#34556b';ctx.stroke();
+  ctx.restore();
+  ctx.save();ctx.beginPath();roundedRectPath(ctx,x+35,y+28,165,165,14);ctx.clip();
+  ctx.fillStyle='#f4f6f8';ctx.fillRect(x+35,y+28,165,165);
+  const im=team.image;
+  if(im.complete&&im.naturalWidth){
+   const ratio=Math.min(145/im.naturalWidth,145/im.naturalHeight);
+   const iw=im.naturalWidth*ratio,ih=im.naturalHeight*ratio;
+   ctx.drawImage(im,x+117.5-iw/2,y+110.5-ih/2,iw,ih);
+  }
+  ctx.restore();
+  ctx.fillStyle=active?'#65ffe8':'#e6f2f7';ctx.font='800 19px system-ui';ctx.fillText(team.name,x+w/2,y+235);
+  ctx.fillStyle=active?'#65ffe8':'#8ba9b9';ctx.font='600 12px system-ui';
+  ctx.fillText(active?'SELECTED':'TAP TO SELECT',x+w/2,y+270);
+  if(active){ctx.strokeStyle='#65ffe8';ctx.lineWidth=3;ctx.beginPath();ctx.arc(x+w-22,y+22,9,0,Math.PI*2);ctx.stroke();ctx.fillStyle='#65ffe8';ctx.beginPath();ctx.arc(x+w-22,y+22,4,0,Math.PI*2);ctx.fill()}
+ });
+ const enabled=chosenTeam>=0;
+ ctx.save();ctx.shadowColor=enabled?'rgba(49,255,220,.4)':'transparent';ctx.shadowBlur=enabled?20:0;
+ ctx.beginPath();roundedRectPath(ctx,570,555,390,78,16);ctx.fillStyle=enabled?'#20cbb6':'#334957';ctx.fill();
+ ctx.strokeStyle=enabled?'#8ffff0':'#536977';ctx.lineWidth=2;ctx.stroke();ctx.restore();
+ ctx.fillStyle=enabled?'#041b20':'#a9bbc3';ctx.font='900 22px system-ui';
+ ctx.fillText('CONTINUE',W/2,594);
+ ctx.textAlign='start';ctx.textBaseline='alphabetic';
+}
+
 function draw(){
  if(screenState==='teamSelect'){
   ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,canvas.width,canvas.height);
