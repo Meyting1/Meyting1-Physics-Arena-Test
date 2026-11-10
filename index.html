@@ -239,13 +239,16 @@ window.addEventListener('pointercancel',e=>{if(e.pointerType!=='touch')finishAim
 let physicsTick=0;
 function physics(h){
   physicsTick++;
-  // Pause the whole match while a returned disc completes its animation.
-  const returning=bodies.find(b=>b._returnAnim);
-  if(returning){
-   const anim=returning._returnAnim;anim.elapsed+=h;
-   const t=Math.min(anim.elapsed/anim.duration,1),ease=t*t*(3-2*t);
-   returning.x=anim.fromX+(anim.toX-anim.fromX)*ease;returning.y=anim.fromY+(anim.toY-anim.fromY)*ease;
-   if(t>=1)delete returning._returnAnim;
+  // Pause gameplay while every returned disc completes its own animation.
+  const returning=bodies.filter(b=>b._returnAnim);
+  if(returning.length){
+   for(const body of returning){
+    const anim=body._returnAnim;anim.elapsed+=h;
+    const t=Math.min(anim.elapsed/anim.duration,1),ease=t*t*(3-2*t);
+    body.x=anim.fromX+(anim.toX-anim.fromX)*ease;
+    body.y=anim.fromY+(anim.toY-anim.fromY)*ease;
+    if(t>=1)delete body._returnAnim;
+   }
    return;
   }
   for(const b of bodies)if(b.kind==='ball')b._contactsThisTick=new Set();
