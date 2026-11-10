@@ -310,10 +310,10 @@ function physics(h){
   if(!inGoalMouth||!returnSide)continue;
   const returnDistance=b.r*4;
   let targetX=returnSide==='left'?FIELD.left+returnDistance:FIELD.right-returnDistance;
-  const minY=FIELD.goalTop+b.r*.73416+5,maxY=FIELD.goalBottom-b.r*.73416-5;
+  const minY=FIELD.goalTop+b.r*.73416,maxY=FIELD.goalBottom-b.r*.73416;
   const clearAt=(x,y)=>bodies.every(other=>{
    if(other===b||other.kind==='post')return true;
-   return Math.hypot(x-other.x,y-other.y)>=(b.r+other.r)*.73416+5;
+   return Math.hypot(x-other.x,y-other.y)>=(b.r+other.r)*.73416;
   });
   let targetY=Math.max(minY,Math.min(maxY,b.y)),found=false;
   for(let offset=0;offset<=maxY-minY&&!found;offset++){
@@ -536,7 +536,7 @@ function draw(){
  for(const b of bodies){
   if(b.kind==='ball')continue;
   ctx.beginPath();
-  ctx.arc(b.x,b.y,b.r*.73416+2.5,0,Math.PI*2);
+  ctx.arc(b.x,b.y,b.r*.73416,0,Math.PI*2);
   ctx.stroke();
  }
  ctx.setLineDash([]);
