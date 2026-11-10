@@ -285,6 +285,11 @@ function physics(h){
   // Checking only the center here caused the disc to rebound before it could cross the line.
   const enteringLeftGoal=inGoalMouth&&b.x-hitRadius<FIELD.left;
   const enteringRightGoal=inGoalMouth&&b.x+hitRadius>FIELD.right;
+  // Remember once the disc center crosses the goal line (more than half its diameter).
+  if(b.kind!=='ball'&&inGoalMouth){
+   if(b.x<FIELD.left)b._goalReturnSide='left';
+   else if(b.x>FIELD.right)b._goalReturnSide='right';
+  }
   if(b.x-hitRadius<FIELD.left&&!enteringLeftGoal){b.x=FIELD.left+hitRadius;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   if(b.x+hitRadius>FIELD.right&&!enteringRightGoal){b.x=FIELD.right-hitRadius;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   // Back walls at the end of each net tunnel, with the same rebound response as field walls.
@@ -302,11 +307,11 @@ function physics(h){
  if(bodies.some(b=>b._returnAnim))return;
  // After all motion and collisions resolve, return only fully stopped player discs beyond the goal line.
  for(const b of bodies){
-  if(b.kind==='ball'||b._returnAnim||b.vx!==0||b.vy!==0)continue;
-  if(b.y<=FIELD.goalTop||b.y>=FIELD.goalBottom)continue;
-  if(b.x<FIELD.left||b.x>FIELD.right){
+  if(b.kind==='ball'||b._returnAnim||b.vx!==0||b.vy!==0||!b._goalReturnSide)continue;
+  const returnSide=b._goalReturnSide;
+  {
    const returnDistance=b.r*4; // two full disc diameters back inside the field
-   const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
+   const targetX=returnSide==='left'?FIELD.left+returnDistance:FIELD.right-returnDistance;
    const minY=FIELD.goalTop+b.r+1,maxY=FIELD.goalBottom-b.r-1;
    const clearAt=(x,y)=>bodies.every(other=>{
     if(other===b||other.kind==='post')return true;
@@ -325,7 +330,7 @@ function physics(h){
    // If that vertical lane is full, search progressively farther inside the field.
    if(!found){
     for(let inward=1;inward<=b.r*4&&!found;inward++){
-     const candidateX=targetX+(b.x<FIELD.left?inward:-inward);
+     const candidateX=targetX+(returnSide==='left'?inward:-inward);
      for(let offset=0;offset<=maxY-minY&&!found;offset++){
       for(const sign of (offset===0?[1]:[1,-1])){
        const candidateY=Math.max(minY,Math.min(maxY,b.y))+offset*sign;
