@@ -304,7 +304,37 @@ function physics(h){
   if(b.x<FIELD.left||b.x>FIELD.right){
    const returnDistance=b.r*4; // two full disc diameters back inside the field
    const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
-   b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:b.y,elapsed:0,duration:.48};
+   const minY=FIELD.goalTop+b.r+1,maxY=FIELD.goalBottom-b.r-1;
+   const clearAt=(x,y)=>bodies.every(other=>{
+    if(other===b||other.kind==='post')return true;
+    return Math.hypot(x-other.x,y-other.y)>=b.r+other.r+1;
+   });
+   let targetY=Math.max(minY,Math.min(maxY,b.y)),found=false;
+   // Keep the intended return depth and find the nearest vertically clear spot.
+   for(let offset=0;offset<=maxY-minY&&!found;offset++){
+    for(const sign of (offset===0?[1]:[1,-1])){
+     const candidateY=targetY+offset*sign;
+     if(candidateY>=minY&&candidateY<=maxY&&clearAt(targetX,candidateY)){
+      targetY=candidateY;found=true;break;
+     }
+    }
+   }
+   // If that vertical lane is full, search progressively farther inside the field.
+   if(!found){
+    for(let inward=1;inward<=b.r*4&&!found;inward++){
+     const candidateX=targetX+(b.x<FIELD.left?inward:-inward);
+     for(let offset=0;offset<=maxY-minY&&!found;offset++){
+      for(const sign of (offset===0?[1]:[1,-1])){
+       const candidateY=Math.max(minY,Math.min(maxY,b.y))+offset*sign;
+       if(candidateY>=minY&&candidateY<=maxY&&clearAt(candidateX,candidateY)){
+        targetX=candidateX;targetY=candidateY;found=true;break;
+       }
+      }
+     }
+    }
+   }
+   if(!found)continue;
+   b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:targetY,elapsed:0,duration:1.5};
    b.spin=0;b.frictionActive=false;
   }
  }
