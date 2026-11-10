@@ -247,7 +247,7 @@ function physics(h){
     const t=Math.min(anim.elapsed/anim.duration,1),ease=t*t*(3-2*t);
     body.x=anim.fromX+(anim.toX-anim.fromX)*ease;
     body.y=anim.fromY+(anim.toY-anim.fromY)*ease;
-    if(t>=1)delete body._returnAnim;
+    if(t>=1){delete body._returnAnim;delete body._goalReturnSide;}
    }
    return;
   }
@@ -286,9 +286,10 @@ function physics(h){
   const enteringLeftGoal=inGoalMouth&&b.x-hitRadius<FIELD.left;
   const enteringRightGoal=inGoalMouth&&b.x+hitRadius>FIELD.right;
   // Remember once the disc center crosses the goal line (more than half its diameter).
-  if(b.kind!=='ball'&&inGoalMouth){
-   if(b.x<FIELD.left)b._goalReturnSide='left';
-   else if(b.x>FIELD.right)b._goalReturnSide='right';
+  if(b.kind!=='ball'){
+   if(inGoalMouth&&b.x<FIELD.left)b._goalReturnSide='left';
+   else if(inGoalMouth&&b.x>FIELD.right)b._goalReturnSide='right';
+   else if(b.x>=FIELD.left&&b.x<=FIELD.right)delete b._goalReturnSide;
   }
   if(b.x-hitRadius<FIELD.left&&!enteringLeftGoal){b.x=FIELD.left+hitRadius;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   if(b.x+hitRadius>FIELD.right&&!enteringRightGoal){b.x=FIELD.right-hitRadius;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
