@@ -285,16 +285,6 @@ function physics(h){
   // Back walls at the end of each net tunnel, with the same rebound response as field walls.
   if(beyondLeftGoal&&b.x-hitRadius<FIELD.left-goalDepth){b.x=FIELD.left-goalDepth+hitRadius;markCollision(b,'net-back-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   if(beyondRightGoal&&b.x+hitRadius>FIELD.right+goalDepth){b.x=FIELD.right+goalDepth-hitRadius;markCollision(b,'net-back-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
-  // A player disc is returned to the pitch once its center crosses the goal line
-  // (more than half of its diameter has passed the line). Keep play going; do not score.
-  if(b.kind!=='ball'&&inGoalMouth){
-   const returnDistance=b.r*4; // two full disc diameters back inside the field
-   if(b.x<FIELD.left||b.x>FIELD.right){
-    const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
-    b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:b.y,elapsed:0,duration:.48};
-    b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;
-   }
-  }
   // The upper and lower edges of the net tunnel also behave like walls.
   if(beyondLeftGoal||beyondRightGoal){
    if(b.y-hitRadius<FIELD.goalTop){b.y=FIELD.goalTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
@@ -308,6 +298,17 @@ function physics(h){
   for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)collide(bodies[i],bodies[j]);
   // Resolve each player/ball body against the four immovable circular goal posts.
   for(const body of bodies)for(const post of goalPosts)collide(body,post);
+ }
+ // Return only player discs that have fully stopped after their shot beyond the goal line.
+ for(const b of bodies){
+  if(b.kind==='ball'||b._returnAnim||b.vx!==0||b.vy!==0)continue;
+  if(b.y<=FIELD.goalTop||b.y>=FIELD.goalBottom)continue;
+  if(b.x<FIELD.left||b.x>FIELD.right){
+   const returnDistance=b.r*4; // two full disc diameters back inside the field
+   const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
+   b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:b.y,elapsed:0,duration:.48};
+   b.spin=0;b.frictionActive=false;
+  }
  }
  for(const b of bodies)if(b.kind==='ball')b._contactsLastTick=b._contactsThisTick;
  const ballSpeed=Math.hypot(bodies[2].vx,bodies[2].vy);
