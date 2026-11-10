@@ -527,6 +527,20 @@ function draw(){
  if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
  drawArenaEdits();
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
+ // TEMP DEBUG: dashed blue rings visualize the return-placement clearance.
+ // Two ring radii together equal the exact pairwise rule: effective radii + 5px.
+ ctx.save();
+ ctx.strokeStyle='rgba(45,190,255,.95)';
+ ctx.lineWidth=2.2;
+ ctx.setLineDash([5,6]);
+ for(const b of bodies){
+  if(b.kind==='ball')continue;
+  ctx.beginPath();
+  ctx.arc(b.x,b.y,b.r*.73416+2.5,0,Math.PI*2);
+  ctx.stroke();
+ }
+ ctx.setLineDash([]);
+ ctx.restore();
  // Pass 1: fixed thickness layer for every disc.
  // Keep its original geometry; only its depth is changed so the ball can cover it.
  for(const b of bodies){
