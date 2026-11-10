@@ -527,16 +527,41 @@ function draw(){
  if(fieldTexture.complete&&fieldTexture.naturalWidth){ctx.drawImage(fieldTexture,0,0,W,H)}else{ctx.fillStyle='#176b42';ctx.fillRect(0,0,W,H)}
  drawArenaEdits();
  for(const t of trails){ctx.globalAlpha=t.life/18*.18;ctx.fillStyle=t.color;ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
- // TEMP DEBUG: dashed blue rings visualize the return-placement clearance.
- // Two ring radii together equal the exact pairwise rule: effective radii + 5px.
+ // DEBUG OVERLAY: green dotted lines show the active contact/influence boundaries.
+ // These are visualization only; they do not participate in physics.
  ctx.save();
- ctx.strokeStyle='rgba(45,190,255,.95)';
- ctx.lineWidth=2.2;
- ctx.setLineDash([5,6]);
+ ctx.strokeStyle='rgba(65,255,115,.96)';
+ ctx.lineWidth=2.4;
+ ctx.setLineDash([5,7]);
+ // Player-piece influence rings. The ball ring is slightly wider to match
+ // the separate piece/ball collision threshold.
  for(const b of bodies){
-  if(b.kind==='ball')continue;
+  const radius=b.kind==='ball'
+   ? Math.max(0,b.r*.73416-4)
+   : Math.max(0,b.r*.73416-8);
   ctx.beginPath();
-  ctx.arc(b.x,b.y,Math.max(0,b.r*.73416-8),0,Math.PI*2);
+  ctx.arc(b.x,b.y,radius,0,Math.PI*2);
+  ctx.stroke();
+ }
+ // Field wall contact boundaries; the side openings are intentionally left clear.
+ const line=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
+ line(FIELD.left,FIELD.top,FIELD.right,FIELD.top);
+ line(FIELD.left,FIELD.bottom,FIELD.right,FIELD.bottom);
+ line(FIELD.left,FIELD.top,FIELD.left,FIELD.goalTop);
+ line(FIELD.left,FIELD.goalBottom,FIELD.left,FIELD.bottom);
+ line(FIELD.right,FIELD.top,FIELD.right,FIELD.goalTop);
+ line(FIELD.right,FIELD.goalBottom,FIELD.right,FIELD.bottom);
+ // Goal tunnel: back wall and upper/lower tunnel boundaries on both sides.
+ line(FIELD.left-goalDepth,FIELD.goalTop,FIELD.left-goalDepth,FIELD.goalBottom);
+ line(FIELD.left-goalDepth,FIELD.goalTop,FIELD.left,FIELD.goalTop);
+ line(FIELD.left-goalDepth,FIELD.goalBottom,FIELD.left,FIELD.goalBottom);
+ line(FIELD.right+goalDepth,FIELD.goalTop,FIELD.right+goalDepth,FIELD.goalBottom);
+ line(FIELD.right,FIELD.goalTop,FIELD.right+goalDepth,FIELD.goalTop);
+ line(FIELD.right,FIELD.goalBottom,FIELD.right+goalDepth,FIELD.goalBottom);
+ // Circular contact zones around the four fixed goal posts.
+ for(const post of goalPosts){
+  ctx.beginPath();
+  ctx.arc(post.x,post.y,post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
   ctx.stroke();
  }
  ctx.setLineDash([]);
