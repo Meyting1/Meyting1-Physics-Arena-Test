@@ -247,7 +247,7 @@ function physics(h){
     const t=Math.min(anim.elapsed/anim.duration,1),ease=t*t*(3-2*t);
     body.x=anim.fromX+(anim.toX-anim.fromX)*ease;
     body.y=anim.fromY+(anim.toY-anim.fromY)*ease;
-    if(t>=1){delete body._returnAnim;delete body._goalReturnSide;}
+    if(t>=1)delete body._returnAnim;
    }
    return;
   }
@@ -285,12 +285,7 @@ function physics(h){
   // Checking only the center here caused the disc to rebound before it could cross the line.
   const enteringLeftGoal=inGoalMouth&&b.x-hitRadius<FIELD.left;
   const enteringRightGoal=inGoalMouth&&b.x+hitRadius>FIELD.right;
-  // Remember once the disc center crosses the goal line (more than half its diameter).
-  if(b.kind!=='ball'){
-   if(inGoalMouth&&b.x<FIELD.left)b._goalReturnSide='left';
-   else if(inGoalMouth&&b.x>FIELD.right)b._goalReturnSide='right';
-   else if(b.x>=FIELD.left&&b.x<=FIELD.right)delete b._goalReturnSide;
-  }
+
   if(b.x-hitRadius<FIELD.left&&!enteringLeftGoal){b.x=FIELD.left+hitRadius;markCollision(b,'wall-left');b.vx=Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   if(b.x+hitRadius>FIELD.right&&!enteringRightGoal){b.x=FIELD.right-hitRadius;markCollision(b,'wall-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   // Back walls at the end of each net tunnel, with the same rebound response as field walls.
@@ -306,50 +301,45 @@ function physics(h){
  }
  // Freeze all gameplay physics immediately when a return animation starts.
  if(bodies.some(b=>b._returnAnim))return;
- // After all motion and collisions resolve, return only fully stopped player discs beyond the goal line.
+ // Decide from the disc's FINAL stopped position, not from a past crossing.
+ // If the net rebound brings it back inside the field before stopping, do not pause the game.
  for(const b of bodies){
-  if(b.kind==='ball'||b._returnAnim||b.vx!==0||b.vy!==0||!b._goalReturnSide)continue;
-  const returnSide=b._goalReturnSide;
-  {
-   const returnDistance=b.r*4; // two full disc diameters back inside the field
-   const targetX=returnSide==='left'?FIELD.left+returnDistance:FIELD.right-returnDistance;
-   const minY=FIELD.goalTop+b.r+1,maxY=FIELD.goalBottom-b.r-1;
-   const clearAt=(x,y)=>bodies.every(other=>{
-    if(other===b||other.kind==='post')return true;
-    return Math.hypot(x-other.x,y-other.y)>=b.r+other.r+1;
-   });
-   let targetY=Math.max(minY,Math.min(maxY,b.y)),found=false;
-   // Keep the intended return depth and find the nearest vertically clear spot.
-   for(let offset=0;offset<=maxY-minY&&!found;offset++){
-    for(const sign of (offset===0?[1]:[1,-1])){
-     const candidateY=targetY+offset*sign;
-     if(candidateY>=minY&&candidateY<=maxY&&clearAt(targetX,candidateY)){
-      targetY=candidateY;found=true;break;
-     }
+  if(b.kind==='ball'||b._returnAnim||b.vx!==0||b.vy!==0)continue;
+  const inGoalMouth=b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
+  const returnSide=b.x<FIELD.left?'left':b.x>FIELD.right?'right':null;
+  if(!inGoalMouth||!returnSide)continue;
+  const returnDistance=b.r*4;
+  let targetX=returnSide==='left'?FIELD.left+returnDistance:FIELD.right-returnDistance;
+  const minY=FIELD.goalTop+b.r+1,maxY=FIELD.goalBottom-b.r-1;
+  const clearAt=(x,y)=>bodies.every(other=>{
+   if(other===b||other.kind==='post')return true;
+   return Math.hypot(x-other.x,y-other.y)>=b.r+other.r+1;
+  });
+  let targetY=Math.max(minY,Math.min(maxY,b.y)),found=false;
+  for(let offset=0;offset<=maxY-minY&&!found;offset++){
+   for(const sign of (offset===0?[1]:[1,-1])){
+    const candidateY=targetY+offset*sign;
+    if(candidateY>=minY&&candidateY<=maxY&&clearAt(targetX,candidateY)){
+     targetY=candidateY;found=true;break;
     }
    }
-   // If that vertical lane is full, search progressively farther inside the field.
-   if(!found){
-    for(let inward=1;inward<=b.r*4&&!found;inward++){
-     const candidateX=targetX+(returnSide==='left'?inward:-inward);
-     for(let offset=0;offset<=maxY-minY&&!found;offset++){
-      for(const sign of (offset===0?[1]:[1,-1])){
-       const candidateY=Math.max(minY,Math.min(maxY,b.y))+offset*sign;
-       if(candidateY>=minY&&candidateY<=maxY&&clearAt(candidateX,candidateY)){
-        targetX=candidateX;targetY=candidateY;found=true;break;
-       }
+  }
+  if(!found){
+   for(let inward=1;inward<=b.r*4&&!found;inward++){
+    const candidateX=targetX+(returnSide==='left'?inward:-inward);
+    for(let offset=0;offset<=maxY-minY&&!found;offset++){
+     for(const sign of (offset===0?[1]:[1,-1])){
+      const candidateY=Math.max(minY,Math.min(maxY,b.y))+offset*sign;
+      if(candidateY>=minY&&candidateY<=maxY&&clearAt(candidateX,candidateY)){
+       targetX=candidateX;targetY=candidateY;found=true;break;
       }
      }
     }
    }
-   // Never leave a stopped disc stranded in the goal: if every searched
-   // location is occupied, use the designated return point as a final fallback.
-   if(!found){
-    targetY=Math.max(minY,Math.min(maxY,b.y));
-   }
-   b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:targetY,elapsed:0,duration:1.5};
-   b.spin=0;b.frictionActive=false;
   }
+  if(!found)targetY=Math.max(minY,Math.min(maxY,b.y));
+  b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:targetY,elapsed:0,duration:1.5};
+  b.spin=0;b.frictionActive=false;
  }
  if(bodies.some(b=>b._returnAnim))return;
  // Several solver passes resolve contact chains and remove residual overlap.
