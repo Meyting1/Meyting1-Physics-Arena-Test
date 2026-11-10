@@ -275,7 +275,7 @@ function physics(h){
   b.angle+=(Math.hypot(b.vx,b.vy)/b.r+b.spin)*h;
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
-  const hitRadius=b.r*.73416;
+  const hitRadius=Math.max(0,b.r*.73416-8);
   // The side-wall opening spans the two post centers; the circular posts themselves block the rounded corners.
   const inGoalMouth=b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
   // The white goal line is open for every body; the net's far end is the new wall.
@@ -296,8 +296,8 @@ function physics(h){
    if(b.y-hitRadius<FIELD.goalTop){b.y=FIELD.goalTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
    if(b.y+hitRadius>FIELD.goalBottom){b.y=FIELD.goalBottom-hitRadius;markCollision(b,'net-side-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
   }
-  if(b.y-b.r*.73416<FIELD.top){b.y=FIELD.top+b.r*.73416;markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
-  if(b.y+b.r*.73416>FIELD.bottom){b.y=FIELD.bottom-b.r*.73416;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.y-Math.max(0,b.r*.73416-8)<FIELD.top){b.y=FIELD.top+Math.max(0,b.r*.73416-8);markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(b.y+Math.max(0,b.r*.73416-8)>FIELD.bottom){b.y=FIELD.bottom-Math.max(0,b.r*.73416-8);markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Freeze all gameplay physics immediately when a return animation starts.
  if(bodies.some(b=>b._returnAnim))return;
@@ -310,10 +310,10 @@ function physics(h){
   if(!inGoalMouth||!returnSide)continue;
   const returnDistance=b.r*4;
   let targetX=returnSide==='left'?FIELD.left+returnDistance:FIELD.right-returnDistance;
-  const minY=FIELD.goalTop+b.r*.73416,maxY=FIELD.goalBottom-b.r*.73416;
+  const minY=FIELD.goalTop+Math.max(0,b.r*.73416-8),maxY=FIELD.goalBottom-Math.max(0,b.r*.73416-8);
   const clearAt=(x,y)=>bodies.every(other=>{
    if(other===b||other.kind==='post')return true;
-   return Math.hypot(x-other.x,y-other.y)>=(b.r+other.r)*.73416;
+   return Math.hypot(x-other.x,y-other.y)>=Math.max(0,(b.r+other.r)*.73416-16);
   });
   let targetY=Math.max(minY,Math.min(maxY,b.y)),found=false;
   for(let offset=0;offset<=maxY-minY&&!found;offset++){
@@ -536,7 +536,7 @@ function draw(){
  for(const b of bodies){
   if(b.kind==='ball')continue;
   ctx.beginPath();
-  ctx.arc(b.x,b.y,b.r*.73416,0,Math.PI*2);
+  ctx.arc(b.x,b.y,Math.max(0,b.r*.73416-8),0,Math.PI*2);
   ctx.stroke();
  }
  ctx.setLineDash([]);
