@@ -66,7 +66,7 @@ function resize(){
 function pos(e){const r=canvas.getBoundingClientRect();const sx=(e.clientX-r.left)*dpr,sy=(e.clientY-r.top)*dpr;return{x:(sy-offsetY)/scale,y:H-(sx-offsetX)/scale}}
 function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function updateTurn(){}
-function moving(){return bodies.some(b=>Math.hypot(b.vx,b.vy)>.8)}
+function moving(){return bodies.some(b=>b._returnAnim||Math.hypot(b.vx,b.vy)>.8)}
 function playTone(freq=260,dur=.06,type='sine',vol=.035){if(!soundOn)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();let o=audio.createOscillator(),g=audio.createGain();o.type=type;o.frequency.value=freq;g.gain.value=vol;o.connect(g);g.connect(audio.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+dur);o.stop(audio.currentTime+dur)}catch{}}
 function burst(x,y,color,n=12){for(let i=0;i<n;i++){let a=Math.random()*Math.PI*2,s=1+Math.random()*5;particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:35+Math.random()*20,color,r:1+Math.random()*3})}}
 function showToast(){}
@@ -278,14 +278,6 @@ function physics(h){
   // The white goal line is open for every body; the net's far end is the new wall.
   const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
   const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
-  // Trigger at the instant more than half the disc has crossed the goal line.
-  if(b.kind!=='ball'&&inGoalMouth&&(b.x<FIELD.left||b.x>FIELD.right)){
-   const returnDistance=b.r*4; // two full disc diameters back inside the field
-   const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
-   b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:b.y,elapsed:0,duration:.48};
-   b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;
-   continue;
-  }
   // Open the side-wall collision as soon as the disc's leading edge reaches the goal mouth.
   // Checking only the center here caused the disc to rebound before it could cross the line.
   const enteringLeftGoal=inGoalMouth&&b.x-hitRadius<FIELD.left;
@@ -304,6 +296,18 @@ function physics(h){
   if(b.y+b.r*.73416>FIELD.bottom){b.y=FIELD.bottom-b.r*.73416;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Freeze all gameplay physics immediately when a return animation starts.
+ if(bodies.some(b=>b._returnAnim))return;
+ // After all motion and collisions resolve, return only fully stopped player discs beyond the goal line.
+ for(const b of bodies){
+  if(b.kind==='ball'||b._returnAnim||b.vx!==0||b.vy!==0)continue;
+  if(b.y<=FIELD.goalTop||b.y>=FIELD.goalBottom)continue;
+  if(b.x<FIELD.left||b.x>FIELD.right){
+   const returnDistance=b.r*4; // two full disc diameters back inside the field
+   const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
+   b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:b.y,elapsed:0,duration:.48};
+   b.spin=0;b.frictionActive=false;
+  }
+ }
  if(bodies.some(b=>b._returnAnim))return;
  // Several solver passes resolve contact chains and remove residual overlap.
  for(let pass=0;pass<4;pass++){
