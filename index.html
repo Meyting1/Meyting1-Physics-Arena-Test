@@ -21,7 +21,7 @@ const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
 const $=id=>document.getElementById(id);
 const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 // Keep the complete supplied arena image, including the player-name and score panels.
-const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:263,goalBottom:500};
+const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:272,goalBottom:490};
 let dpr=1,scale=1,offsetX=0,offsetY=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
 let screenState='teamSelect',chosenTeam=-1,opponentTeam=-1;
@@ -256,7 +256,9 @@ function physics(h){
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const hitRadius=b.r*.73416;
-  const inGoalMouth=b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
+  // The clear opening is measured between the inner faces of the two goal bars.
+  // Require the full effective collision circle to fit between them before opening the side wall.
+  const inGoalMouth=b.y-hitRadius>FIELD.goalTop&&b.y+hitRadius<FIELD.goalBottom;
   // The white goal line is open for every body; the net's far end is the new wall.
   const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
   const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
