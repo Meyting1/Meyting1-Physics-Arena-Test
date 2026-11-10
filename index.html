@@ -310,10 +310,10 @@ function physics(h){
   if(!inGoalMouth||!returnSide)continue;
   const returnDistance=b.r*4;
   let targetX=returnSide==='left'?FIELD.left+returnDistance:FIELD.right-returnDistance;
-  const minY=FIELD.goalTop+b.r+1,maxY=FIELD.goalBottom-b.r-1;
+  const minY=FIELD.goalTop+b.r*.73416+5,maxY=FIELD.goalBottom-b.r*.73416-5;
   const clearAt=(x,y)=>bodies.every(other=>{
    if(other===b||other.kind==='post')return true;
-   return Math.hypot(x-other.x,y-other.y)>=b.r+other.r+1;
+   return Math.hypot(x-other.x,y-other.y)>=(b.r+other.r)*.73416+5;
   });
   let targetY=Math.max(minY,Math.min(maxY,b.y)),found=false;
   for(let offset=0;offset<=maxY-minY&&!found;offset++){
