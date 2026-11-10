@@ -24,6 +24,14 @@ const W=1529,H=688,wall=24,goalW=170,goalDepth=26;
 const FIELD={left:330,right:1240,top:113,bottom:677,goalTop:272,goalBottom:490};
 let dpr=1,scale=1,offsetX=0,offsetY=0,scoreA=0,scoreB=0,turn='A',aim=null,selected=null,shots=0,particles=[],trails=[],soundOn=true,audio=null,toastTimer=0,settleTimer=0;
 const bodies=[];
+// Four fixed circular goal posts. Their collision response uses the same circle-circle solver as player discs.
+const goalPostRadius=10.9;
+const goalPosts=[
+ {x:FIELD.left,y:FIELD.goalTop,r:goalPostRadius,inv:0,vx:0,vy:0,spin:0,kind:'post'},
+ {x:FIELD.left,y:FIELD.goalBottom,r:goalPostRadius,inv:0,vx:0,vy:0,spin:0,kind:'post'},
+ {x:FIELD.right,y:FIELD.goalTop,r:goalPostRadius,inv:0,vx:0,vy:0,spin:0,kind:'post'},
+ {x:FIELD.right,y:FIELD.goalBottom,r:goalPostRadius,inv:0,vx:0,vy:0,spin:0,kind:'post'}
+];
 let screenState='teamSelect',chosenTeam=-1,opponentTeam=-1;
 const teamChoices=[
  {name:'ESTEGHLAL',file:'teams/esteghlal-new.png',image:new Image()},
@@ -256,9 +264,8 @@ function physics(h){
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const hitRadius=b.r*.73416;
-  // The clear opening is measured between the inner faces of the two goal bars.
-  // Require the full effective collision circle to fit between them before opening the side wall.
-  const inGoalMouth=b.y-hitRadius>FIELD.goalTop&&b.y+hitRadius<FIELD.goalBottom;
+  // The side-wall opening spans the two post centers; the circular posts themselves block the rounded corners.
+  const inGoalMouth=b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
   // The white goal line is open for every body; the net's far end is the new wall.
   const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
   const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
@@ -280,8 +287,11 @@ function physics(h){
   if(b.y+b.r*.73416>FIELD.bottom){b.y=FIELD.bottom-b.r*.73416;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Several solver passes resolve contact chains and remove residual overlap.
- for(let pass=0;pass<4;pass++)
+ for(let pass=0;pass<4;pass++){
   for(let i=0;i<bodies.length;i++)for(let j=i+1;j<bodies.length;j++)collide(bodies[i],bodies[j]);
+  // Resolve each player/ball body against the four immovable circular goal posts.
+  for(const body of bodies)for(const post of goalPosts)collide(body,post);
+ }
  for(const b of bodies)if(b.kind==='ball')b._contactsLastTick=b._contactsThisTick;
  const ballSpeed=Math.hypot(bodies[2].vx,bodies[2].vy);
  if(ballSpeed>2310){bodies[2].vx*=2310/ballSpeed;bodies[2].vy*=2310/ballSpeed}
