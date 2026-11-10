@@ -242,6 +242,13 @@ function physics(h){
   for(const b of bodies)if(b.kind==='ball')b._contactsThisTick=new Set();
  // h is a fixed 1/120-second step. Velocities are pixels per second.
  for(const b of bodies){
+  if(b._returnAnim){
+   const anim=b._returnAnim;anim.elapsed+=h;
+   const t=Math.min(anim.elapsed/anim.duration,1),ease=t*t*(3-2*t);
+   b.x=anim.fromX+(anim.toX-anim.fromX)*ease;b.y=anim.fromY+(anim.toY-anim.fromY)*ease;
+   if(t>=1)delete b._returnAnim;
+   continue;
+  }
   const speed=Math.hypot(b.vx,b.vy);
   if(speed>0&&b.kind!=='ball'&&!b.frictionActive&&b.lowAimDrag>0){
     // Gentle shots lose speed from the start, so they also travel a much shorter distance.
@@ -282,8 +289,11 @@ function physics(h){
   // (more than half of its diameter has passed the line). Keep play going; do not score.
   if(b.kind!=='ball'&&inGoalMouth){
    const returnDistance=b.r*4; // two full disc diameters back inside the field
-   if(b.x<FIELD.left){b.x=FIELD.left+returnDistance;b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;}
-   else if(b.x>FIELD.right){b.x=FIELD.right-returnDistance;b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;}
+   if(b.x<FIELD.left||b.x>FIELD.right){
+    const targetX=b.x<FIELD.left?FIELD.left+returnDistance:FIELD.right-returnDistance;
+    b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:b.y,elapsed:0,duration:.48};
+    b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;
+   }
   }
   // The upper and lower edges of the net tunnel also behave like walls.
   if(beyondLeftGoal||beyondRightGoal){
@@ -314,6 +324,7 @@ function wallSpin(b,tangentSpeed){
 }
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
+ if(a._returnAnim||b._returnAnim)return;
  let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=(a.r+b.r)*.73416;
  if(dist>=min)return;
  if(dist<1e-8){dx=1;dy=0;dist=1}
