@@ -47,9 +47,27 @@ pieceTop.src='piece-top-new.png';
 const ballTexture=new Image();ballTexture.src='ball_exact.jpg';
 // Keep the original high-resolution arena artwork for maximum visual fidelity.
 const fieldTexture=new Image();fieldTexture.src='1794090316714.jpg';
-// Decorative goal-net overlays; these images never participate in game physics.
-const goalLeftTexture=new Image();goalLeftTexture.src='goal-left.png';
-const goalRightTexture=new Image();goalRightTexture.src='goal-right.png';
+// Decorative goal-net overlays; crop transparent padding so the complete goal artwork is visible.
+function goalAlphaBounds(img){
+ const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;
+ const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);
+ const px=g.getImageData(0,0,c.width,c.height).data;
+ let minX=c.width,minY=c.height,maxX=-1,maxY=-1;
+ for(let y=0;y<c.height;y++)for(let x=0;x<c.width;x++){
+  if(px[(y*c.width+x)*4+3]>8){if(x<minX)minX=x;if(x>maxX)maxX=x;if(y<minY)minY=y;if(y>maxY)maxY=y;}
+ }
+ return maxX>=minX?{x:minX,y:minY,w:maxX-minX+1,h:maxY-minY+1}:{x:0,y:0,w:c.width,h:c.height};
+}
+function drawGoalOverlay(img,bounds,x,y,w,h){
+ if(!img.complete||!img.naturalWidth)return;
+ const b=bounds||{x:0,y:0,w:img.naturalWidth,h:img.naturalHeight};
+ ctx.drawImage(img,b.x,b.y,b.w,b.h,x,y,w,h);
+}
+const goalLeftTexture=new Image(),goalRightTexture=new Image();
+let goalLeftBounds=null,goalRightBounds=null;
+goalLeftTexture.onload=()=>{goalLeftBounds=goalAlphaBounds(goalLeftTexture)};
+goalRightTexture.onload=()=>{goalRightBounds=goalAlphaBounds(goalRightTexture)};
+goalLeftTexture.src='goal-left.png';goalRightTexture.src='goal-right.png';
 
 const make=(x,y,r,mass,color,kind)=>({x,y,vx:0,vy:0,r,mass,color,kind,inv:1/mass,spin:0,angle:0,frictionActive:false});
 function setup(){
@@ -638,12 +656,8 @@ function draw(){
  for(const p of particles){ctx.globalAlpha=clamp(p.life/45,0,1);ctx.fillStyle=p.color;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}ctx.globalAlpha=1;
  // Highest visual layer: supplied goal PNGs sit over the ball and all gameplay artwork.
  // Drawn only for presentation; no collision, scoring, or movement logic uses these images.
- if(goalLeftTexture.complete&&goalLeftTexture.naturalWidth){
-  ctx.drawImage(goalLeftTexture,FIELD.left-goalDepth,FIELD.goalTop,goalDepth,FIELD.goalBottom-FIELD.goalTop);
- }
- if(goalRightTexture.complete&&goalRightTexture.naturalWidth){
-  ctx.drawImage(goalRightTexture,FIELD.right,FIELD.goalTop,goalDepth,FIELD.goalBottom-FIELD.goalTop);
- }
+ drawGoalOverlay(goalLeftTexture,goalLeftBounds,FIELD.left-goalDepth,FIELD.goalTop,goalDepth,FIELD.goalBottom-FIELD.goalTop);
+ drawGoalOverlay(goalRightTexture,goalRightBounds,FIELD.right,FIELD.goalTop,goalDepth,FIELD.goalBottom-FIELD.goalTop);
  ctx.restore();
  particles=particles.filter(p=>p.life-->0);for(const p of particles){p.x+=p.vx;p.y+=p.vy;p.vx*=.96;p.vy*=.96}
  trails=trails.filter(t=>t.life-->0);
