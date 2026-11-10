@@ -617,7 +617,7 @@ function draw(){
    ? Math.max(0,b.r*.73416+2)
    : Math.max(0,b.r*.73416-8);
   ctx.beginPath();
-  ctx.arc(b.x,b.y+4,radius,0,Math.PI*2);
+  ctx.arc(b.x+4/scale,b.y,radius,0,Math.PI*2);
   ctx.stroke();
  }
  // Field wall contact boundaries; the side openings are intentionally left clear.
