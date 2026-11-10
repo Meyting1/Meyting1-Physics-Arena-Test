@@ -364,7 +364,7 @@ function wallSpin(b,tangentSpeed){
 function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
  if(a._returnAnim||b._returnAnim)return;
- let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=(a.r+b.r)*.73416;
+ let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=Math.max(0,(a.r+b.r)*.73416-16);
  if(dist>=min)return;
  if(dist<1e-8){dx=1;dy=0;dist=1}
  const nx=dx/dist,ny=dy/dist,overlap=min-dist,total=a.inv+b.inv;
