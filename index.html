@@ -336,7 +336,11 @@ function physics(h){
      }
     }
    }
-   if(!found)continue;
+   // Never leave a stopped disc stranded in the goal: if every searched
+   // location is occupied, use the designated return point as a final fallback.
+   if(!found){
+    targetY=Math.max(minY,Math.min(maxY,b.y));
+   }
    b._returnAnim={fromX:b.x,fromY:b.y,toX:targetX,toY:targetY,elapsed:0,duration:1.5};
    b.spin=0;b.frictionActive=false;
   }
