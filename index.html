@@ -281,7 +281,7 @@ function physics(h){
   // A player disc is returned to the pitch once its center crosses the goal line
   // (more than half of its diameter has passed the line). Keep play going; do not score.
   if(b.kind!=='ball'&&inGoalMouth){
-   const returnDistance=b.r*6; // three full disc diameters back inside the field
+   const returnDistance=b.r*4; // two full disc diameters back inside the field
    if(b.x<FIELD.left){b.x=FIELD.left+returnDistance;b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;}
    else if(b.x>FIELD.right){b.x=FIELD.right-returnDistance;b.vx=0;b.vy=0;b.spin=0;b.frictionActive=false;}
   }
