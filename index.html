@@ -614,7 +614,7 @@ function draw(){
  // the separate piece/ball collision threshold.
  for(const b of bodies){
   const radius=b.kind==='ball'
-   ? Math.max(0,b.r*.73416-4)
+   ? Math.max(0,b.r*.73416-1)
    : Math.max(0,b.r*.73416-8);
   ctx.beginPath();
   ctx.arc(b.x,b.y,radius,0,Math.PI*2);
