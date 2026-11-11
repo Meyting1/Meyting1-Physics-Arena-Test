@@ -607,18 +607,28 @@ function draw(){
  // DEBUG OVERLAY: green dotted lines show the active contact/influence boundaries.
  // These are visualization only; they do not participate in physics.
  ctx.save();
- ctx.strokeStyle='rgba(65,255,115,.96)';
  ctx.lineWidth=2.4;
  ctx.setLineDash([5,7]);
- // Player-piece influence rings. The ball ring is slightly wider to match
- // the separate piece/ball collision threshold.
+ // Compare the original piece-ring position (red) with a 4px lower candidate (green).
  for(const b of bodies){
   const radius=b.kind==='ball'
    ? Math.max(0,b.r*.73416+2)
    : Math.max(0,b.r*.73416-8);
-  ctx.beginPath();
-  ctx.arc(b.x,b.kind==='ball'?b.y:b.y+(b.r+10.30848-radius),radius,0,Math.PI*2);
-  ctx.stroke();
+  if(b.kind==='ball'){
+   ctx.strokeStyle='rgba(65,255,115,.96)';
+   ctx.beginPath();
+   ctx.arc(b.x,b.y,radius,0,Math.PI*2);
+   ctx.stroke();
+  }else{
+   ctx.strokeStyle='rgba(255,65,65,.96)';
+   ctx.beginPath();
+   ctx.arc(b.x,b.y,radius,0,Math.PI*2);
+   ctx.stroke();
+   ctx.strokeStyle='rgba(65,255,115,.96)';
+   ctx.beginPath();
+   ctx.arc(b.x,b.y+4,radius,0,Math.PI*2);
+   ctx.stroke();
+  }
  }
  // Field wall contact boundaries; the side openings are intentionally left clear.
  const line=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
