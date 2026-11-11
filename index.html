@@ -634,28 +634,36 @@ function draw(){
    ctx.setLineDash([5,7]);
   }
  }
- // Align the upper dotted wall/tunnel edges with the shifted upper-post circles.
- const visualGoalTop=FIELD.goalTop+19;
- // Field wall contact boundaries; the side openings are intentionally left clear.
+ // Green dashed lines show the true center-path limits for a player disc.
+ // These offsets match the hitRadius and post-contact calculations in the physics step.
+ const pieceHitRadius=Math.max(0,47.15172*.73416-8);
+ const leftContact=FIELD.left+pieceHitRadius;
+ const rightContact=FIELD.right-pieceHitRadius;
+ const topContact=FIELD.top+pieceHitRadius;
+ const bottomContact=FIELD.bottom-pieceHitRadius;
+ const goalTopContact=FIELD.goalTop+pieceHitRadius;
+ const goalBottomContact=FIELD.goalBottom-pieceHitRadius;
+ const leftBackContact=FIELD.left-goalDepth+pieceHitRadius;
+ const rightBackContact=FIELD.right+goalDepth-pieceHitRadius;
  const line=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
- line(FIELD.left,FIELD.top,FIELD.right,FIELD.top);
- line(FIELD.left,FIELD.bottom,FIELD.right,FIELD.bottom);
- line(FIELD.left,FIELD.top,FIELD.left,visualGoalTop);
- line(FIELD.left,FIELD.goalBottom,FIELD.left,FIELD.bottom);
- line(FIELD.right,FIELD.top,FIELD.right,visualGoalTop);
- line(FIELD.right,FIELD.goalBottom,FIELD.right,FIELD.bottom);
- // Goal tunnel: back wall and upper/lower tunnel boundaries on both sides.
- line(FIELD.left-goalDepth,visualGoalTop,FIELD.left-goalDepth,FIELD.goalBottom);
- line(FIELD.left-goalDepth,visualGoalTop,FIELD.left,visualGoalTop);
- line(FIELD.left-goalDepth,FIELD.goalBottom,FIELD.left,FIELD.goalBottom);
- line(FIELD.right+goalDepth,visualGoalTop,FIELD.right+goalDepth,FIELD.goalBottom);
- line(FIELD.right,visualGoalTop,FIELD.right+goalDepth,visualGoalTop);
- line(FIELD.right,FIELD.goalBottom,FIELD.right+goalDepth,FIELD.goalBottom);
- // Circular contact zones around the four fixed goal posts.
+ // Main field: actual contact limits for the player-disc center.
+ line(leftContact,topContact,rightContact,topContact);
+ line(leftContact,bottomContact,rightContact,bottomContact);
+ line(leftContact,topContact,leftContact,FIELD.goalTop);
+ line(leftContact,FIELD.goalBottom,leftContact,bottomContact);
+ line(rightContact,topContact,rightContact,FIELD.goalTop);
+ line(rightContact,FIELD.goalBottom,rightContact,bottomContact);
+ // Goal tunnels: back, upper and lower contact limits.
+ line(leftBackContact,goalTopContact,leftBackContact,goalBottomContact);
+ line(leftBackContact,goalTopContact,FIELD.left,goalTopContact);
+ line(leftBackContact,goalBottomContact,FIELD.left,goalBottomContact);
+ line(rightBackContact,goalTopContact,rightBackContact,goalBottomContact);
+ line(FIELD.right,goalTopContact,rightBackContact,goalTopContact);
+ line(FIELD.right,goalBottomContact,rightBackContact,goalBottomContact);
+ // Circular player-center limits around each post, using the exact collide() threshold.
  for(const post of goalPosts){
-  const centerY=post.y+(post.y===FIELD.goalTop?19:0);
   ctx.beginPath();
-  ctx.arc(post.x,centerY,post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
+  ctx.arc(post.x,post.y,post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
   ctx.stroke();
   // Yellow marker identifies the exact center of each goal-post dotted circle.
   ctx.save();
