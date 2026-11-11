@@ -634,20 +634,22 @@ function draw(){
    ctx.setLineDash([5,7]);
   }
  }
+ // Align the upper dotted wall/tunnel edges with the shifted upper-post circles.
+ const visualGoalTop=FIELD.goalTop+19;
  // Field wall contact boundaries; the side openings are intentionally left clear.
  const line=(x1,y1,x2,y2)=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()};
  line(FIELD.left,FIELD.top,FIELD.right,FIELD.top);
  line(FIELD.left,FIELD.bottom,FIELD.right,FIELD.bottom);
- line(FIELD.left,FIELD.top,FIELD.left,FIELD.goalTop);
+ line(FIELD.left,FIELD.top,FIELD.left,visualGoalTop);
  line(FIELD.left,FIELD.goalBottom,FIELD.left,FIELD.bottom);
- line(FIELD.right,FIELD.top,FIELD.right,FIELD.goalTop);
+ line(FIELD.right,FIELD.top,FIELD.right,visualGoalTop);
  line(FIELD.right,FIELD.goalBottom,FIELD.right,FIELD.bottom);
  // Goal tunnel: back wall and upper/lower tunnel boundaries on both sides.
- line(FIELD.left-goalDepth,FIELD.goalTop,FIELD.left-goalDepth,FIELD.goalBottom);
- line(FIELD.left-goalDepth,FIELD.goalTop,FIELD.left,FIELD.goalTop);
+ line(FIELD.left-goalDepth,visualGoalTop,FIELD.left-goalDepth,FIELD.goalBottom);
+ line(FIELD.left-goalDepth,visualGoalTop,FIELD.left,visualGoalTop);
  line(FIELD.left-goalDepth,FIELD.goalBottom,FIELD.left,FIELD.goalBottom);
- line(FIELD.right+goalDepth,FIELD.goalTop,FIELD.right+goalDepth,FIELD.goalBottom);
- line(FIELD.right,FIELD.goalTop,FIELD.right+goalDepth,FIELD.goalTop);
+ line(FIELD.right+goalDepth,visualGoalTop,FIELD.right+goalDepth,FIELD.goalBottom);
+ line(FIELD.right,visualGoalTop,FIELD.right+goalDepth,visualGoalTop);
  line(FIELD.right,FIELD.goalBottom,FIELD.right+goalDepth,FIELD.goalBottom);
  // Circular contact zones around the four fixed goal posts.
  for(const post of goalPosts){
