@@ -609,7 +609,7 @@ function draw(){
  ctx.save();
  ctx.lineWidth=2.4;
  ctx.setLineDash([5,7]);
- // Compare the original piece-ring position (red) with a 4px lower candidate (green).
+ // Compare the original piece-ring position (red) with an 11px lower candidate (green).
  for(const b of bodies){
   const radius=b.kind==='ball'
    ? Math.max(0,b.r*.73416+2)
@@ -626,8 +626,17 @@ function draw(){
    ctx.stroke();
    ctx.strokeStyle='rgba(65,255,115,.96)';
    ctx.beginPath();
-   ctx.arc(b.x,b.y+7,radius,0,Math.PI*2);
+   ctx.arc(b.x,b.y+11,radius,0,Math.PI*2);
    ctx.stroke();
+   // Solid center marker for the green comparison ring.
+   ctx.fillStyle='rgba(255,235,80,.98)';
+   ctx.beginPath();
+   ctx.arc(b.x,b.y+11,3.5,0,Math.PI*2);
+   ctx.fill();
+   ctx.strokeStyle='rgba(20,20,20,.95)';
+   ctx.lineWidth=1;
+   ctx.stroke();
+   ctx.lineWidth=2.4;
   }
  }
  // Field wall contact boundaries; the side openings are intentionally left clear.
