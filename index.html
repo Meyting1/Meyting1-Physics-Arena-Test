@@ -296,10 +296,13 @@ function physics(h){
   b.angle+=(Math.hypot(b.vx,b.vy)/b.r+b.spin)*h;
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
+  // Player-piece contacts use the exact green dotted ring: radius r*0.73416-8, centered 11px below the artwork center.
   const hitRadius=Math.max(0,b.r*.73416-8);
+  const contactOffset=b.kind==='ball'?0:11;
+  const contactY=b.y+contactOffset;
   // The upper opening edge follows the visible upper-post collision circles.
   const goalOpeningTop=FIELD.goalTop+19;
-  const inGoalMouth=b.y>goalOpeningTop&&b.y<FIELD.goalBottom;
+  const inGoalMouth=contactY>goalOpeningTop&&contactY<FIELD.goalBottom;
   // The white goal line is open for every body; the net's far end is the new wall.
   const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
   const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
@@ -318,8 +321,8 @@ function physics(h){
    if(b.y-hitRadius<goalOpeningTop){b.y=goalOpeningTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
    if(b.y+hitRadius>FIELD.goalBottom){b.y=FIELD.goalBottom-hitRadius;markCollision(b,'net-side-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
   }
-  if(b.y-Math.max(0,b.r*.73416-8)<FIELD.top){b.y=FIELD.top+Math.max(0,b.r*.73416-8);markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
-  if(b.y+Math.max(0,b.r*.73416-8)>FIELD.bottom){b.y=FIELD.bottom-Math.max(0,b.r*.73416-8);markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(contactY-hitRadius<FIELD.top){b.y=FIELD.top+hitRadius-contactOffset;markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+  if(contactY+hitRadius>FIELD.bottom){b.y=FIELD.bottom-hitRadius-contactOffset;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
  }
  // Freeze all gameplay physics immediately when a return animation starts.
  if(bodies.some(b=>b._returnAnim))return;
@@ -390,11 +393,13 @@ function collide(a,b){
  const postContact=a.kind==='post'||b.kind==='post';
  const post=a.kind==='post'?a:(b.kind==='post'?b:null);
  const postY=post&&post.y===FIELD.goalTop?post.y+19:post?.y;
- const ax=a.x,ay=a.kind==='post'?postY:a.y,bx=b.x,by=b.kind==='post'?postY:b.y;
+ const contactCenterY=body=>body.kind==='post'?postY:(body.kind==='ball'?body.y:body.y+11);
+ const ax=a.x,ay=contactCenterY(a),bx=b.x,by=contactCenterY(b);
  let dx=bx-ax,dy=by-ay,dist=Math.hypot(dx,dy);
  // Post contact uses the exact radius of the visible green dotted collision circle for both ball and player pieces.
  const postBoundary=goalPostRadius*.73416+47.15172*.73416-16;
- const min=postContact?postBoundary:Math.max(0,(a.r+b.r)*.73416-(ballContact?12:16));
+ const contactRadius=body=>Math.max(0,body.r*.73416+(body.kind==='ball'?2:-8));
+ const min=postContact?postBoundary:(ballContact?contactRadius(a)+contactRadius(b):Math.max(0,(a.r+b.r)*.73416-16));
  if(dist>=min)return;
  if(dist<1e-8){dx=1;dy=0;dist=1}
  const nx=dx/dist,ny=dy/dist,overlap=min-dist,total=a.inv+b.inv;
