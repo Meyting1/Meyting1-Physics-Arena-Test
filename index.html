@@ -619,11 +619,39 @@ function draw(){
 
 
  // Pink dotted circles show only the goal-post influence boundary used for ball/player contact.
+ // TEMPORARY PURPLE DEBUG GUIDES: visualization only; collision physics is unchanged.
  ctx.save();
- ctx.strokeStyle='rgba(255,80,190,.98)';
- ctx.lineWidth=2.8;
- ctx.setLineDash([5,7]);
- // Pink guide shows the ball's circle-circle contact distance from each post center.
+ ctx.strokeStyle='rgba(178,92,255,.98)';
+ ctx.lineWidth=2.2;
+ ctx.setLineDash([4,6]);
+
+ // Field perimeter and goal-tunnel collision walls.
+ const goalOpeningTop=FIELD.goalTop+19;
+ ctx.beginPath();
+ ctx.moveTo(FIELD.left,FIELD.top);ctx.lineTo(FIELD.right,FIELD.top);
+ ctx.moveTo(FIELD.left,FIELD.bottom);ctx.lineTo(FIELD.right,FIELD.bottom);
+ ctx.moveTo(FIELD.left,FIELD.top);ctx.lineTo(FIELD.left,goalOpeningTop);
+ ctx.moveTo(FIELD.left,FIELD.goalBottom);ctx.lineTo(FIELD.left,FIELD.bottom);
+ ctx.moveTo(FIELD.right,FIELD.top);ctx.lineTo(FIELD.right,goalOpeningTop);
+ ctx.moveTo(FIELD.right,FIELD.goalBottom);ctx.lineTo(FIELD.right,FIELD.bottom);
+ ctx.moveTo(FIELD.left-goalDepth,goalOpeningTop);ctx.lineTo(FIELD.left,goalOpeningTop);
+ ctx.moveTo(FIELD.left-goalDepth,FIELD.goalBottom);ctx.lineTo(FIELD.left,FIELD.goalBottom);
+ ctx.moveTo(FIELD.right,goalOpeningTop);ctx.lineTo(FIELD.right+goalDepth,goalOpeningTop);
+ ctx.moveTo(FIELD.right,FIELD.goalBottom);ctx.lineTo(FIELD.right+goalDepth,FIELD.goalBottom);
+ ctx.moveTo(FIELD.left-goalDepth,goalOpeningTop);ctx.lineTo(FIELD.left-goalDepth,FIELD.goalBottom);
+ ctx.moveTo(FIELD.right+goalDepth,goalOpeningTop);ctx.lineTo(FIELD.right+goalDepth,FIELD.goalBottom);
+ ctx.stroke();
+
+ // Collision rings for every player piece and the ball.
+ for(const body of bodies){
+  const radius=Math.max(0,body.r*.73416-8);
+  const centerY=body.y+(body.kind==='ball'?0:11);
+  ctx.beginPath();
+  ctx.arc(body.x,centerY,radius,0,Math.PI*2);
+  ctx.stroke();
+ }
+
+ // Post contact circles, centered on the adjusted post locations.
  const postInfluenceRadius=(goalPostRadius+13.2)*.73416-12;
  for(const post of goalPosts){
   const centerY=post.y+(post.y===FIELD.goalTop?19:0);
