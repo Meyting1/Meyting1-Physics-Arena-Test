@@ -318,8 +318,8 @@ function physics(h){
   if(beyondRightGoal&&b.x+hitRadius>FIELD.right+goalDepth){b.x=FIELD.right+goalDepth-hitRadius;markCollision(b,'net-back-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   // The upper and lower edges of the net tunnel also behave like walls.
   if(beyondLeftGoal||beyondRightGoal){
-   if(b.y-hitRadius<goalOpeningTop){b.y=goalOpeningTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
-   if(b.y+hitRadius>FIELD.goalBottom){b.y=FIELD.goalBottom-hitRadius;markCollision(b,'net-side-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+   if(contactY-hitRadius<goalOpeningTop){b.y=goalOpeningTop+hitRadius-contactOffset;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+   if(contactY+hitRadius>FIELD.goalBottom){b.y=FIELD.goalBottom-hitRadius-contactOffset;markCollision(b,'net-side-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
   }
   if(contactY-hitRadius<FIELD.top){b.y=FIELD.top+hitRadius-contactOffset;markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
   if(contactY+hitRadius>FIELD.bottom){b.y=FIELD.bottom-hitRadius-contactOffset;markCollision(b,'wall-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
