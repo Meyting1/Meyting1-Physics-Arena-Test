@@ -241,13 +241,13 @@ canvas.addEventListener('touchmove',e=>{
  e.preventDefault();
  for(const t of e.changedTouches){const id=touchPositions.get(t.identifier);if(id)moveAim(id,screenPoint(t.clientX,t.clientY));}
 },{passive:false});
-canvas.addEventListener('touchend',e=>{
+window.addEventListener('touchend',e=>{
  e.preventDefault();
  for(const t of e.changedTouches){const id=touchPositions.get(t.identifier);if(id){finishAim(id,false);touchPositions.delete(t.identifier);}}
-},{passive:false});
-canvas.addEventListener('touchcancel',e=>{
+},{passive:false,capture:true});
+window.addEventListener('touchcancel',e=>{
  for(const t of e.changedTouches){const id=touchPositions.get(t.identifier);if(id){finishAim(id,true);touchPositions.delete(t.identifier);}}
-},{passive:false});
+},{passive:false,capture:true});
 // Mouse/pen fallback; touch input is handled only by native touch events.
 canvas.addEventListener('pointerdown',e=>{
  if(e.pointerType==='touch')return;
