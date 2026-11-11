@@ -628,17 +628,6 @@ function draw(){
    ctx.beginPath();
    ctx.arc(b.x,b.y+11,radius,0,Math.PI*2);
    ctx.stroke();
-   // Clearly visible solid marker at the center of the green comparison ring.
-   ctx.save();
-   ctx.setLineDash([]);
-   ctx.fillStyle='rgba(255,230,0,1)';
-   ctx.strokeStyle='rgba(20,20,20,1)';
-   ctx.lineWidth=2;
-   ctx.beginPath();
-   ctx.arc(b.x,b.y+11,6,0,Math.PI*2);
-   ctx.fill();
-   ctx.stroke();
-   ctx.restore();
    // Restore the green overlay style for the field and goal boundaries.
    ctx.strokeStyle='rgba(65,255,115,.96)';
    ctx.lineWidth=2.4;
@@ -662,9 +651,24 @@ function draw(){
  line(FIELD.right,FIELD.goalBottom,FIELD.right+goalDepth,FIELD.goalBottom);
  // Circular contact zones around the four fixed goal posts.
  for(const post of goalPosts){
+  const centerY=post.y+(post.y===FIELD.goalTop?6:0);
   ctx.beginPath();
-  ctx.arc(post.x,post.y+(post.y===FIELD.goalTop?6:0),post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
+  ctx.arc(post.x,centerY,post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
   ctx.stroke();
+  // Yellow marker identifies the exact center of each goal-post dotted circle.
+  ctx.save();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,230,0,1)';
+  ctx.strokeStyle='rgba(20,20,20,1)';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.arc(post.x,centerY,6,0,Math.PI*2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle='rgba(65,255,115,.96)';
+  ctx.lineWidth=2.4;
+  ctx.setLineDash([5,7]);
  }
  ctx.setLineDash([]);
  ctx.restore();
