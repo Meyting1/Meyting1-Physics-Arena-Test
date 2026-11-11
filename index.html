@@ -628,15 +628,21 @@ function draw(){
    ctx.beginPath();
    ctx.arc(b.x,b.y+11,radius,0,Math.PI*2);
    ctx.stroke();
-   // Solid center marker for the green comparison ring.
-   ctx.fillStyle='rgba(255,235,80,.98)';
+   // Clearly visible solid marker at the center of the green comparison ring.
+   ctx.save();
+   ctx.setLineDash([]);
+   ctx.fillStyle='rgba(255,230,0,1)';
+   ctx.strokeStyle='rgba(20,20,20,1)';
+   ctx.lineWidth=2;
    ctx.beginPath();
-   ctx.arc(b.x,b.y+11,3.5,0,Math.PI*2);
+   ctx.arc(b.x,b.y+11,6,0,Math.PI*2);
    ctx.fill();
-   ctx.strokeStyle='rgba(20,20,20,.95)';
-   ctx.lineWidth=1;
    ctx.stroke();
+   ctx.restore();
+   // Restore the green overlay style for the field and goal boundaries.
+   ctx.strokeStyle='rgba(65,255,115,.96)';
    ctx.lineWidth=2.4;
+   ctx.setLineDash([5,7]);
   }
  }
  // Field wall contact boundaries; the side openings are intentionally left clear.
