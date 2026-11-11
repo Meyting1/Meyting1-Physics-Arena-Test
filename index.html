@@ -390,7 +390,16 @@ function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
  if(a._returnAnim||b._returnAnim)return;
  const ballContact=a.kind==='ball'||b.kind==='ball';
- let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=Math.max(0,(a.r+b.r)*.73416-(ballContact?12:16));
+ const postContact=a.kind==='post'||b.kind==='post';
+ // Keep post contact centers aligned with the adjusted artwork and the actual
+ // contact centers of the moving bodies; offsets affect geometry, not visuals.
+ const contactCenter=(body)=>{
+  if(body.kind==='post')return {x:body.x,y:body.y+(body.y===FIELD.goalTop?19:0)};
+  return {x:body.x,y:body.y+(body.kind==='ball'?0:11)};
+ };
+ const ca=postContact?contactCenter(a):{x:a.x,y:a.y};
+ const cb=postContact?contactCenter(b):{x:b.x,y:b.y};
+ let dx=cb.x-ca.x,dy=cb.y-ca.y,dist=Math.hypot(dx,dy),min=Math.max(0,(a.r+b.r)*.73416-(ballContact?12:16));
  if(dist>=min)return;
  if(dist<1e-8){dx=1;dy=0;dist=1}
  const nx=dx/dist,ny=dy/dist,overlap=min-dist,total=a.inv+b.inv;
@@ -617,8 +626,9 @@ function draw(){
  // Pink guide shows the ball's circle-circle contact distance from each post center.
  const postInfluenceRadius=(goalPostRadius+13.2)*.73416-12;
  for(const post of goalPosts){
+  const centerY=post.y+(post.y===FIELD.goalTop?19:0);
   ctx.beginPath();
-  ctx.arc(post.x,post.y,postInfluenceRadius,0,Math.PI*2);
+  ctx.arc(post.x,centerY,postInfluenceRadius,0,Math.PI*2);
   ctx.stroke();
  }
  ctx.setLineDash([]);
