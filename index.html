@@ -617,6 +617,22 @@ function draw(){
   ctx.restore();
  }
 
+
+ // Pink dotted circles show only the goal-post influence boundary used for ball/player contact.
+ ctx.save();
+ ctx.strokeStyle='rgba(255,80,190,.98)';
+ ctx.lineWidth=2.8;
+ ctx.setLineDash([5,7]);
+ const postInfluenceRadius=goalPostRadius*.73416+47.15172*.73416-16;
+ for(const post of goalPosts){
+  const centerY=post.y+(post.y===FIELD.goalTop?19:0);
+  ctx.beginPath();
+  ctx.arc(post.x,centerY,postInfluenceRadius,0,Math.PI*2);
+  ctx.stroke();
+ }
+ ctx.setLineDash([]);
+ ctx.restore();
+
  if(selected&&gestureVector){
  const b=selected,len=Math.hypot(gestureVector.x,gestureVector.y),shownLength=Math.min(len,150),power=Math.min(len,150);
  const nx=len>0?gestureVector.x/len:0,ny=len>0?gestureVector.y/len:0;
