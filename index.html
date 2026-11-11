@@ -297,8 +297,9 @@ function physics(h){
   b.spin*=Math.exp(-(b.kind==='ball'?1.7:2.8)*h);
   if(Math.hypot(b.vx,b.vy)<1.2){b.vx=0;b.vy=0;b.spin=0}
   const hitRadius=Math.max(0,b.r*.73416-8);
-  // The side-wall opening spans the two post centers; the circular posts themselves block the rounded corners.
-  const inGoalMouth=b.y>FIELD.goalTop&&b.y<FIELD.goalBottom;
+  // The upper opening edge follows the visible upper-post collision circles.
+  const goalOpeningTop=FIELD.goalTop+19;
+  const inGoalMouth=b.y>goalOpeningTop&&b.y<FIELD.goalBottom;
   // The white goal line is open for every body; the net's far end is the new wall.
   const beyondLeftGoal=b.x<FIELD.left&&inGoalMouth;
   const beyondRightGoal=b.x>FIELD.right&&inGoalMouth;
@@ -314,7 +315,7 @@ function physics(h){
   if(beyondRightGoal&&b.x+hitRadius>FIELD.right+goalDepth){b.x=FIELD.right+goalDepth-hitRadius;markCollision(b,'net-back-right');b.vx=-Math.abs(b.vx)*(b.kind==='ball'?.92:.84);b.vy*=b.kind==='ball'?.997:.985;wallSpin(b,b.vy);wallFX(b.x,b.y)}
   // The upper and lower edges of the net tunnel also behave like walls.
   if(beyondLeftGoal||beyondRightGoal){
-   if(b.y-hitRadius<FIELD.goalTop){b.y=FIELD.goalTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
+   if(b.y-hitRadius<goalOpeningTop){b.y=goalOpeningTop+hitRadius;markCollision(b,'net-side-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
    if(b.y+hitRadius>FIELD.goalBottom){b.y=FIELD.goalBottom-hitRadius;markCollision(b,'net-side-bottom');b.vy=-Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
   }
   if(b.y-Math.max(0,b.r*.73416-8)<FIELD.top){b.y=FIELD.top+Math.max(0,b.r*.73416-8);markCollision(b,'wall-top');b.vy=Math.abs(b.vy)*(b.kind==='ball'?.92:.84);b.vx*=b.kind==='ball'?.997:.985;wallSpin(b,b.vx);wallFX(b.x,b.y)}
@@ -386,7 +387,14 @@ function wallFX(x,y){if(Math.random()<.09)burst(x,y,'#53f5e8',3)}
 function collide(a,b){
  if(a._returnAnim||b._returnAnim)return;
  const ballContact=a.kind==='ball'||b.kind==='ball';
- let dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy),min=Math.max(0,(a.r+b.r)*.73416-(ballContact?12:16));
+ const postContact=a.kind==='post'||b.kind==='post';
+ const post=a.kind==='post'?a:(b.kind==='post'?b:null);
+ const postY=post&&post.y===FIELD.goalTop?post.y+19:post?.y;
+ const ax=a.x,ay=a.kind==='post'?postY:a.y,bx=b.x,by=b.kind==='post'?postY:b.y;
+ let dx=bx-ax,dy=by-ay,dist=Math.hypot(dx,dy);
+ // Post contact uses the exact radius of the visible green dotted collision circle for both ball and player pieces.
+ const postBoundary=goalPostRadius*.73416+47.15172*.73416-16;
+ const min=postContact?postBoundary:Math.max(0,(a.r+b.r)*.73416-(ballContact?12:16));
  if(dist>=min)return;
  if(dist<1e-8){dx=1;dy=0;dist=1}
  const nx=dx/dist,ny=dy/dist,overlap=min-dist,total=a.inv+b.inv;
