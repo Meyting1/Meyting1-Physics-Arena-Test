@@ -648,7 +648,7 @@ function draw(){
  // Circular contact zones around the four fixed goal posts.
  for(const post of goalPosts){
   ctx.beginPath();
-  ctx.arc(post.x,post.y,post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
+  ctx.arc(post.x,post.y+(post.y===FIELD.goalTop?6:0),post.r*.73416+47.15172*.73416-16,0,Math.PI*2);
   ctx.stroke();
  }
  ctx.setLineDash([]);
