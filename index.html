@@ -642,9 +642,13 @@ function draw(){
  ctx.moveTo(FIELD.right+goalDepth,goalOpeningTop);ctx.lineTo(FIELD.right+goalDepth,FIELD.goalBottom);
  ctx.stroke();
 
- // Collision rings for every player piece and the ball.
+ // Collision rings for player pieces and the ball.
+ // The ball ring shows the actual center-to-center contact distance
+ // against a standard player piece, using the same formula as collide().
  for(const body of bodies){
-  const radius=Math.max(0,body.r*.73416-8);
+  const radius=body.kind==='ball'
+   ?Math.max(0,(body.r+47.15172)*.73416-12)
+   :Math.max(0,body.r*.73416-8);
   const centerY=body.y+(body.kind==='ball'?0:11);
   ctx.beginPath();
   ctx.arc(body.x,centerY,radius,0,Math.PI*2);
